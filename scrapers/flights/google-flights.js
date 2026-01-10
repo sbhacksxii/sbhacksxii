@@ -15,19 +15,9 @@ const rl = readline.createInterface({
 const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolve));
 
 /**
- * Format date to Google Flights URL format (YYYY-MM-DD)
- */
-function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  return date.toISOString().split('T')[0];
-}
-
-/**
  * Build Google Flights URL with search parameters
  */
 function buildGoogleFlightsUrl(from, to, departDate, returnDate = null) {
-  // Google Flights URL format
-  // https://www.google.com/travel/flights?q=Flights%20to%20LAX%20from%20SFO%20on%202024-01-15
   const baseUrl = 'https://www.google.com/travel/flights';
   
   let searchQuery = `Flights from ${from} to ${to} on ${departDate}`;
@@ -36,6 +26,169 @@ function buildGoogleFlightsUrl(from, to, departDate, returnDate = null) {
   }
   
   return `${baseUrl}?q=${encodeURIComponent(searchQuery)}&curr=USD`;
+}
+
+/**
+ * Normalize time format (e.g., "7:25 AM" → "07:25 AM")
+ */
+function normalizeTime(timeStr) {
+  if (!timeStr) return null;
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (match) {
+    const hour = match[1].padStart(2, '0');
+    return `${hour}:${match[2]} ${match[3].toUpperCase()}`;
+  }
+  return timeStr;
+}
+
+/**
+ * Parse duration string to minutes (e.g., "5 hr 30 min" → 330)
+ */
+function parseDurationToMinutes(durationStr) {
+  if (!durationStr) return null;
+  const hrMatch = durationStr.match(/(\d+)\s*hr/i);
+  const minMatch = durationStr.match(/(\d+)\s*min/i);
+  const hours = hrMatch ? parseInt(hrMatch[1], 10) : 0;
+  const minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
+  return hours * 60 + minutes;
+}
+
+/**
+ * Extract flight data from page using specified selectors
+ */
+async function extractFlightData(page) {
+  return await page.evaluate(() => {
+    const results = [];
+    
+    // Flight result containers - use both selectors
+    const flightCards = document.querySelectorAll('li.pIav2d, div.gQ6yfe.m7VU8c');
+    
+    flightCards.forEach((card, index) => {
+      if (index >= 15) return; // Limit to ~15 results
+      
+      // Initialize flight object with nulls
+      let flight = {
+        price: null,
+        airline: null,
+        departureTime: null,
+        arrivalTime: null,
+        duration: null,
+        stops: null,
+        bags: null,
+        rawSummary: null
+      };
+      
+      // === PRIMARY SELECTORS ===
+      
+      // Price: .YMlIz.FpEdX span[aria-label] or span[role="text"]
+      const priceEl = card.querySelector('.YMlIz.FpEdX span[aria-label]') 
+                   || card.querySelector('.YMlIz.FpEdX span[role="text"]')
+                   || card.querySelector('.YMlIz.FpEdX');
+      if (priceEl) {
+        flight.price = priceEl.getAttribute('aria-label') || priceEl.innerText?.trim();
+      }
+      
+      // Airline: .sSHqwe span or .Ir0Voe .sSHqwe span
+      const airlineEl = card.querySelector('.Ir0Voe .sSHqwe span') 
+                     || card.querySelector('.sSHqwe span')
+                     || card.querySelector('.sSHqwe');
+      if (airlineEl) {
+        flight.airline = airlineEl.innerText?.trim();
+      }
+      
+      // Departure time: span[aria-label^="Departure time"]
+      const departureEl = card.querySelector('span[aria-label^="Departure time"]');
+      if (departureEl) {
+        flight.departureTime = departureEl.getAttribute('aria-label')?.replace('Departure time: ', '') 
+                            || departureEl.innerText?.trim();
+      }
+      
+      // Arrival time: span[aria-label^="Arrival time"]
+      const arrivalEl = card.querySelector('span[aria-label^="Arrival time"]');
+      if (arrivalEl) {
+        flight.arrivalTime = arrivalEl.getAttribute('aria-label')?.replace('Arrival time: ', '') 
+                          || arrivalEl.innerText?.trim();
+      }
+      
+      // Duration: .gvkrdb.AdWm1c[aria-label] or .gvkrdb.AdWm1c
+      const durationEl = card.querySelector('.gvkrdb.AdWm1c[aria-label]') 
+                      || card.querySelector('.gvkrdb.AdWm1c');
+      if (durationEl) {
+        flight.duration = durationEl.getAttribute('aria-label') || durationEl.innerText?.trim();
+      }
+      
+      // Stops: Look for text containing "Nonstop" or "stop"
+      const cardText = card.innerText || '';
+      const stopsMatch = cardText.match(/(Nonstop|\d+\s*stops?)/i);
+      if (stopsMatch) {
+        flight.stops = stopsMatch[0];
+      }
+      
+      // Bags: Search for carry-on or checked bag text
+      const bagsMatch = cardText.match(/(carry-on|checked bag|checked baggage)[^,\n]*/gi);
+      if (bagsMatch) {
+        flight.bags = bagsMatch.join(', ');
+      }
+      
+      // === FALLBACK: div.JMc5Xc[aria-label] summary ===
+      const summaryEl = card.querySelector('div.JMc5Xc[aria-label]');
+      const rawSummary = summaryEl?.getAttribute('aria-label') || null;
+      flight.rawSummary = rawSummary;
+      
+      // Parse missing fields from rawSummary
+      if (rawSummary) {
+        // Price fallback - look for dollar amount
+        if (!flight.price) {
+          const priceMatch = rawSummary.match(/\$[\d,]+/);
+          if (priceMatch) flight.price = priceMatch[0];
+        }
+        
+        // Airline fallback - typically at the start or after "Operated by"
+        if (!flight.airline) {
+          // Common pattern: airline name is often first or after specific phrases
+          const airlineMatch = rawSummary.match(/(?:Operated by |^)([A-Z][a-zA-Z\s]+?)(?:\.|,|\d|Leaves)/);
+          if (airlineMatch) flight.airline = airlineMatch[1].trim();
+        }
+        
+        // Departure time fallback
+        if (!flight.departureTime) {
+          const depMatch = rawSummary.match(/(?:Leaves|Departs?|at)\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+          if (depMatch) flight.departureTime = depMatch[1];
+        }
+        
+        // Arrival time fallback
+        if (!flight.arrivalTime) {
+          const arrMatch = rawSummary.match(/(?:arrives?|lands?)\s*(?:at\s*)?(\d{1,2}:\d{2}\s*[AP]M)/i);
+          if (arrMatch) flight.arrivalTime = arrMatch[1];
+        }
+        
+        // Duration fallback
+        if (!flight.duration) {
+          const durMatch = rawSummary.match(/(\d+\s*hr(?:s)?\s*(?:\d+\s*min)?|\d+\s*hours?\s*(?:\d+\s*minutes?)?)/i);
+          if (durMatch) flight.duration = durMatch[0];
+        }
+        
+        // Stops fallback
+        if (!flight.stops) {
+          const stopsMatch = rawSummary.match(/(Nonstop|\d+\s*stops?)/i);
+          if (stopsMatch) flight.stops = stopsMatch[0];
+        }
+        
+        // Bags fallback
+        if (!flight.bags) {
+          const bagsMatch = rawSummary.match(/(carry-on|checked bag|checked baggage)[^,.]*/gi);
+          if (bagsMatch) flight.bags = bagsMatch.join(', ');
+        }
+      }
+      
+      // Only add if we found at least some meaningful data
+      if (flight.price || flight.airline || flight.departureTime || flight.rawSummary) {
+        results.push(flight);
+      }
+    });
+    
+    return results;
+  });
 }
 
 /**
@@ -70,95 +223,34 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
     console.log('⏳ Waiting for flight results to load...');
     
     // Wait for flight results container
-    await page.waitForSelector('[role="main"]', { timeout: 30000 });
+    await page.waitForSelector('li.pIav2d, div.gQ6yfe', { timeout: 30000 });
     
-    // Give extra time for dynamic content to load
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Extract flight data
+    const flights = await extractFlightData(page);
     
-    // Try to extract flight data
-    const flights = await page.evaluate(() => {
-      const results = [];
-      
-      // Google Flights uses various selectors - try multiple approaches
-      // Look for flight cards/list items
-      const flightElements = document.querySelectorAll('[data-ved], .pIav2d, li[data-fp]');
-      
-      flightElements.forEach((element, index) => {
-        if (index >= 10) return; // Limit to first 10 results
-        
-        const text = element.innerText;
-        if (!text || text.length < 20) return;
-        
-        // Try to parse the text content
-        const lines = text.split('\n').filter(line => line.trim());
-        
-        // Look for price pattern
-        const priceMatch = text.match(/\$[\d,]+/);
-        // Look for time pattern
-        const timeMatch = text.match(/\d{1,2}:\d{2}\s*[AP]M/gi);
-        // Look for duration pattern
-        const durationMatch = text.match(/\d+\s*hr?\s*\d*\s*min?|\d+h\s*\d+m/i);
-        // Look for airline names
-        const airlines = ['United', 'Delta', 'American', 'Southwest', 'JetBlue', 'Alaska', 'Spirit', 'Frontier', 'Hawaiian', 'Sun Country'];
-        const airlineMatch = airlines.find(airline => text.includes(airline));
-        
-        if (priceMatch || timeMatch) {
-          results.push({
-            price: priceMatch ? priceMatch[0] : 'Price not found',
-            times: timeMatch ? timeMatch.join(' - ') : 'Times not found',
-            duration: durationMatch ? durationMatch[0] : 'Duration not found',
-            airline: airlineMatch || 'Airline not found',
-            rawText: lines.slice(0, 5).join(' | ')
-          });
-        }
-      });
-      
-      // If no structured results, try alternative approach
-      if (results.length === 0) {
-        // Look for any price elements
-        const priceElements = document.querySelectorAll('[data-gs], .YMlIz, .BVAVmf');
-        priceElements.forEach((el, i) => {
-          if (i >= 5) return;
-          const priceText = el.innerText;
-          if (priceText.includes('$')) {
-            results.push({
-              price: priceText.match(/\$[\d,]+/)?.[0] || priceText,
-              rawText: el.closest('[role="listitem"]')?.innerText?.slice(0, 200) || priceText
-            });
-          }
-        });
-      }
-      
-      return results;
-    });
+    // Log sample for debugging
+    if (flights.length > 0) {
+      console.log('\n📋 Sample parsed flight object:');
+      console.log(JSON.stringify(flights[0], null, 2));
+    }
 
-    // Also get the page title and any summary info
-    const pageInfo = await page.evaluate(() => {
-      const title = document.title;
-      const summaryText = document.querySelector('[role="main"]')?.innerText?.slice(0, 500);
-      return { title, summaryText };
-    });
-
-    console.log('\n📊 Page Title:', pageInfo.title);
+    console.log(`\n✅ Found ${flights.length} flight results\n`);
     
     if (flights.length > 0) {
-      console.log(`\n✅ Found ${flights.length} flight results:\n`);
-      console.log('='.repeat(60));
+      console.log('='.repeat(70));
       
       flights.forEach((flight, index) => {
         console.log(`\n🎫 Flight ${index + 1}:`);
-        console.log(`   💰 Price: ${flight.price}`);
-        if (flight.airline) console.log(`   ✈️  Airline: ${flight.airline}`);
-        if (flight.times) console.log(`   🕐 Times: ${flight.times}`);
-        if (flight.duration) console.log(`   ⏱️  Duration: ${flight.duration}`);
-        if (flight.rawText) console.log(`   📝 Details: ${flight.rawText}`);
+        console.log(`   💰 Price:     ${flight.price || 'N/A'}`);
+        console.log(`   ✈️  Airline:   ${flight.airline || 'N/A'}`);
+        console.log(`   🛫 Departure: ${normalizeTime(flight.departureTime) || 'N/A'}`);
+        console.log(`   🛬 Arrival:   ${normalizeTime(flight.arrivalTime) || 'N/A'}`);
+        console.log(`   ⏱️  Duration:  ${flight.duration || 'N/A'}`);
+        console.log(`   🔄 Stops:     ${flight.stops || 'N/A'}`);
+        console.log(`   🧳 Bags:      ${flight.bags || 'N/A'}`);
       });
       
-      console.log('\n' + '='.repeat(60));
-    } else {
-      console.log('\n⚠️  No structured flight data found.');
-      console.log('📄 Page content preview:');
-      console.log(pageInfo.summaryText?.slice(0, 300) || 'Unable to read page content');
+      console.log('\n' + '='.repeat(70));
     }
 
     // Return normalized data
@@ -166,20 +258,22 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
       type: 'flight',
       departure: {
         location: from,
-        time: flight.times?.split(' - ')[0] || null
+        time: normalizeTime(flight.departureTime)
       },
       arrival: {
         location: to,
-        time: flight.times?.split(' - ')[1] || null
+        time: normalizeTime(flight.arrivalTime)
       },
       duration: flight.duration,
-      price: parseFloat(flight.price?.replace(/[$,]/g, '')) || null,
+      durationMinutes: parseDurationToMinutes(flight.duration),
+      price: flight.price ? parseFloat(flight.price.replace(/[$,]/g, '')) : null,
       priceFormatted: flight.price,
       currency: 'USD',
-      provider: flight.airline || 'Unknown',
-      stops: 0,
+      provider: flight.airline,
+      stops: flight.stops,
+      bags: flight.bags,
       source: 'Google Flights',
-      rawData: flight
+      rawSummary: flight.rawSummary
     }));
 
   } catch (error) {
