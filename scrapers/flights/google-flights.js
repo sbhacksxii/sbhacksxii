@@ -1,5 +1,7 @@
 import puppeteer from 'puppeteer';
 import readline from 'readline';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Google Flights Scraper
@@ -54,6 +56,65 @@ function parseDurationToMinutes(durationStr) {
 }
 
 /**
+ * Create a unique key for a flight to detect duplicates
+ */
+function createFlightKey(flight) {
+  return [
+    flight.price,
+    flight.airline,
+    flight.departureTime,
+    flight.arrivalTime,
+    flight.duration
+  ].join('|').toLowerCase();
+}
+
+/**
+ * Deduplicate flights based on key fields
+ */
+function deduplicateFlights(flights) {
+  const seen = new Set();
+  return flights.filter(flight => {
+    const key = createFlightKey(flight);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Save results to JSON file
+ */
+function saveResultsToFile(results, from, to, departDate) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `results_${from}_${to}_${departDate}_${timestamp}.json`;
+  const outputDir = path.join(process.cwd(), 'flights', 'results');
+  
+  // Create results directory if it doesn't exist
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  const filepath = path.join(outputDir, filename);
+  
+  const output = {
+    metadata: {
+      from,
+      to,
+      departDate,
+      scrapedAt: new Date().toISOString(),
+      totalResults: results.length
+    },
+    flights: results
+  };
+  
+  fs.writeFileSync(filepath, JSON.stringify(output, null, 2));
+  console.log(`\n💾 Results saved to: ${filepath}`);
+  return filepath;
+}
+
+/**
  * Extract flight data from page using specified selectors
  */
 async function extractFlightData(page) {
@@ -64,7 +125,6 @@ async function extractFlightData(page) {
     const flightCards = document.querySelectorAll('li.pIav2d, div.gQ6yfe.m7VU8c');
     
     flightCards.forEach((card, index) => {
-      if (index >= 15) return; // Limit to ~15 results
       
       // Initialize flight object with nulls
       let flight = {
@@ -226,7 +286,12 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
     await page.waitForSelector('li.pIav2d, div.gQ6yfe', { timeout: 30000 });
     
     // Extract flight data
-    const flights = await extractFlightData(page);
+    const rawFlights = await extractFlightData(page);
+    
+    // Deduplicate flights
+    const flights = deduplicateFlights(rawFlights);
+    
+    console.log(`\n📊 Raw results: ${rawFlights.length} | After deduplication: ${flights.length}`);
     
     // Log sample for debugging
     if (flights.length > 0) {
@@ -234,7 +299,7 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
       console.log(JSON.stringify(flights[0], null, 2));
     }
 
-    console.log(`\n✅ Found ${flights.length} flight results\n`);
+    console.log(`\n✅ Found ${flights.length} unique flight results\n`);
     
     if (flights.length > 0) {
       console.log('='.repeat(70));
@@ -253,8 +318,8 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
       console.log('\n' + '='.repeat(70));
     }
 
-    // Return normalized data
-    return flights.map(flight => ({
+    // Normalize and structure the data
+    const normalizedFlights = flights.map(flight => ({
       type: 'flight',
       departure: {
         location: from,
@@ -275,6 +340,11 @@ async function scrapeGoogleFlights(from, to, departDate, returnDate = null) {
       source: 'Google Flights',
       rawSummary: flight.rawSummary
     }));
+    
+    // Save results to file
+    saveResultsToFile(normalizedFlights, from, to, departDate);
+    
+    return normalizedFlights;
 
   } catch (error) {
     console.error('❌ Error scraping Google Flights:', error.message);
@@ -340,7 +410,7 @@ async function main() {
 }
 
 // Export for use as module
-export { scrapeGoogleFlights, buildGoogleFlightsUrl };
+export { scrapeGoogleFlights, buildGoogleFlightsUrl, deduplicateFlights, saveResultsToFile };
 
 // Run if called directly (not when imported)
 const isMainModule = import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`;
