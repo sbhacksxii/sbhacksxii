@@ -1,0 +1,15 @@
+{
+  "name": "travel-hub-scrapers",
+  "version": "1.0.0",
+  "description": "Web scrapers for travel data aggregation",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "flights": "node flights/google-flights.js",
+    "dev": "node --watch flights/google-flights.js"
+  },
+  "dependencies": {
+    "puppeteer": "^24.34.0",
+    "readline": "^1.3.0"
+  }
+}
