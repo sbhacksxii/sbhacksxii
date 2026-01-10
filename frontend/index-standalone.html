@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Hub - Find Your Best Route</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function SearchForm({ onSearch, loading }) {
+            const [startLocation, setStartLocation] = useState('');
+            const [endLocation, setEndLocation] = useState('');
+            const [sortBy, setSortBy] = useState('price');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (startLocation.trim() && endLocation.trim()) {
+                    onSearch(startLocation, endLocation, sortBy);
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-4">Search Travel Options</h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
+                                From
+                            </label>
+                            <input
+                                type="text"
+                                id="start"
+                                value={startLocation}
+                                onChange={(e) => setStartLocation(e.target.value)}
+                                placeholder="Enter starting location (e.g., New York, NY)"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="end" className="block text-sm font-medium text-gray-700 mb-1">
+                                To
+                            </label>
+                            <input
+                                type="text"
+                                id="end"
+                                value={endLocation}
+                                onChange={(e) => setEndLocation(e.target.value)}
+                                placeholder="Enter destination (e.g., Los Angeles, CA)"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
+                                Sort By
+                            </label>
+                            <select
+                                id="sortBy"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="price">Price (Lowest First)</option>
+                                <option value="time">Time (Fastest First)</option>
+                                <option value="value">Best Value</option>
+                            </select>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {loading ? 'Searching...' : 'Search Travel Options'}
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
+        function ResultsDisplay({ results, loading }) {
+            if (loading) {
+                return (
+                    <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Searching for travel options...</p>
+                    </div>
+                );
+            }
+
+            if (!results) {
+                return (
+                    <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+                        <p>Enter locations above to search for travel options</p>
+                    </div>
+                );
+            }
+
+            if (results.length === 0) {
+                return (
+                    <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+                        <p>No travel options found. Try different locations.</p>
+                    </div>
+                );
+            }
+
+            const getTransportIcon = (type) => {
+                switch (type.toLowerCase()) {
+                    case 'flight':
+                        return '✈️';
+                    case 'train':
+                        return '🚂';
+                    case 'bus':
+                        return '🚌';
+                    default:
+                        return '🚗';
+                }
+            };
+
+            const formatDuration = (duration) => {
+                return duration || 'N/A';
+            };
+
+            const formatPrice = (price, currency = 'USD') => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currency
+                }).format(price);
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                        Travel Options ({results.length})
+                    </h2>
+                    
+                    <div className="space-y-4">
+                        {results.map((option, index) => (
+                            <div
+                                key={index}
+                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-2xl">{getTransportIcon(option.type)}</span>
+                                            <span className="font-semibold text-lg text-gray-800 capitalize">
+                                                {option.type}
+                                            </span>
+                                            {option.provider && (
+                                                <span className="text-sm text-gray-500">• {option.provider}</span>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mt-3">
+                                            <div>
+                                                <p className="text-sm text-gray-500">From</p>
+                                                <p className="font-medium">{option.departure?.location || 'N/A'}</p>
+                                                <p className="text-sm text-gray-500">
+                                                    {option.departure?.time 
+                                                        ? new Date(option.departure.time).toLocaleString()
+                                                        : 'N/A'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-500">To</p>
+                                                <p className="font-medium">{option.arrival?.location || 'N/A'}</p>
+                                                <p className="text-sm text-gray-500">
+                                                    {option.arrival?.time 
+                                                        ? new Date(option.arrival.time).toLocaleString()
+                                                        : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {option.stops !== undefined && (
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                {option.stops === 0 ? 'Direct' : `${option.stops} stop(s)`}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="text-right ml-4">
+                                        <p className="text-2xl font-bold text-indigo-600">
+                                            {formatPrice(option.price, option.currency)}
+                                        </p>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            {formatDuration(option.duration)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function Chatbot() {
+            const [messages, setMessages] = useState([
+                {
+                    role: 'assistant',
+                    content: 'Hi! I can help you find the best travel options. Try asking me "Find the cheapest way to get from New York to Los Angeles"'
+                }
+            ]);
+            const [input, setInput] = useState('');
+            const [loading, setLoading] = useState(false);
+            const messagesEndRef = React.useRef(null);
+
+            React.useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            const handleSend = async (e) => {
+                e.preventDefault();
+                if (!input.trim() || loading) return;
+
+                const userMessage = { role: 'user', content: input };
+                setMessages(prev => [...prev, userMessage]);
+                setInput('');
+                setLoading(true);
+
+                try {
+                    // TODO: Replace with actual chatbot API call
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: input })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to get chatbot response');
+                    }
+
+                    const data = await response.json();
+                    setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+                } catch (err) {
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: 'Sorry, I encountered an error. Please try again later.'
+                    }]);
+                    console.error('Chatbot error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-lg shadow-md flex flex-col h-[600px]">
+                    <div className="p-4 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800">💬 Travel Assistant</h2>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages.map((message, index) => (
+                            <div
+                                key={index}
+                                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                                <div
+                                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                                        message.role === 'user'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-100 text-gray-800'
+                                    }`}
+                                >
+                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                </div>
+                            </div>
+                        ))}
+                        
+                        {loading && (
+                            <div className="flex justify-start">
+                                <div className="bg-gray-100 rounded-lg px-4 py-2">
+                                    <div className="flex space-x-1">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSend} className="p-4 border-t border-gray-200">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Ask about travel options..."
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                disabled={loading}
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || !input.trim()}
+                                className="bg-indigo-600 text-white px-6 py-2 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+        }
+
+        function App() {
+            const [searchResults, setSearchResults] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const handleSearch = async (startLocation, endLocation, sortBy) => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    // TODO: Replace with actual API call
+                    const response = await fetch('/api/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            start: startLocation,
+                            end: endLocation,
+                            sortBy: sortBy || 'price'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch travel options');
+                    }
+
+                    const data = await response.json();
+                    setSearchResults(data);
+                } catch (err) {
+                    setError(err.message);
+                    console.error('Search error:', err);
+                    // For demo purposes, show mock data if API fails
+                    setSearchResults([
+                        {
+                            type: 'flight',
+                            provider: 'Demo Airlines',
+                            departure: { location: startLocation, time: new Date().toISOString() },
+                            arrival: { location: endLocation, time: new Date(Date.now() + 5*60*60*1000).toISOString() },
+                            duration: '5h 30m',
+                            price: 299.99,
+                            currency: 'USD',
+                            stops: 0
+                        }
+                    ]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+                    <header className="bg-white shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                            <h1 className="text-3xl font-bold text-indigo-600">🚀 Travel Hub</h1>
+                            <p className="text-gray-600 mt-1">Compare flights, trains, and buses in one place</p>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <SearchForm onSearch={handleSearch} loading={loading} />
+                                
+                                {error && (
+                                    <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <ResultsDisplay results={searchResults} loading={loading} />
+                            </div>
+
+                            <div className="lg:col-span-1">
+                                <Chatbot />
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
