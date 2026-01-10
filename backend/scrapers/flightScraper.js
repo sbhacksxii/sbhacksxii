@@ -218,17 +218,32 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
   console.log(`📅 Departure: ${departDate}`);
   if (returnDate) console.log(`📅 Return: ${returnDate}`);
   
-  const browser = await puppeteer.launch({
-    headless: true, // Run headless for API use
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    defaultViewport: { width: 1280, height: 800 },
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  });
+  // Get Chromium path from environment
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+  console.log('🔧 Chromium executable path:', executablePath || 'using bundled Chromium');
+  
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: 'new', // Use new headless mode
+      executablePath: executablePath,
+      defaultViewport: { width: 1280, height: 800 },
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--single-process',
+        '--no-zygote'
+      ]
+    });
+    console.log('✅ Browser launched successfully');
+  } catch (launchError) {
+    console.error('❌ Failed to launch browser:', launchError.message);
+    throw new Error(`Browser launch failed: ${launchError.message}`);
+  }
 
   const page = await browser.newPage();
   
