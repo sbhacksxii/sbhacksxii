@@ -10,13 +10,16 @@ function App() {
   const [error, setError] = useState(null)
   const [sortBy, setSortBy] = useState('price')
 
+  // API URL - uses environment variable in production, falls back to local proxy in dev
+  const API_URL = import.meta.env.VITE_API_URL || ''
+
   const handleSearch = async (searchParams) => {
     setLoading(true)
     setError(null)
     setSortBy(searchParams.sortBy)
     
     try {
-      const response = await fetch('/api/search', {
+      const response = await fetch(`${API_URL}/api/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
