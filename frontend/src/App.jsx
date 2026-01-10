@@ -18,8 +18,12 @@ function App() {
     setError(null)
     setSortBy(searchParams.sortBy)
     
+    const apiEndpoint = `${API_URL}/api/search`
+    console.log('🔍 Searching with API URL:', apiEndpoint)
+    console.log('📦 Search params:', searchParams)
+    
     try {
-      const response = await fetch(`${API_URL}/api/search`, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,16 +31,27 @@ function App() {
         body: JSON.stringify(searchParams)
       })
 
+      console.log('📡 Response status:', response.status)
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Failed to fetch travel options')
+        console.error('❌ API error response:', errorData)
+        throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('✅ Received data:', data.length, 'results')
       setSearchResults(data)
     } catch (err) {
-      setError(err.message)
-      console.error('Search error:', err)
+      console.error('❌ Search error:', err)
+      // More descriptive error messages
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setError('Cannot connect to server. Please check if the backend is running.')
+      } else if (err.message.includes('CORS')) {
+        setError('CORS error - backend may not be configured to accept requests from this domain.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }

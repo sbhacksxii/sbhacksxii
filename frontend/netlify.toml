@@ -5,13 +5,6 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Redirect all API calls to your backend (update with your backend URL)
-[[redirects]]
-  from = "/api/*"
-  to = "https://your-backend-url.herokuapp.com/api/:splat"
-  status = 200
-  force = true
-
 # SPA fallback - serve index.html for all routes
 [[redirects]]
   from = "/*"
