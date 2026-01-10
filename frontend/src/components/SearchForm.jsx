@@ -3,12 +3,25 @@ import { useState } from 'react'
 function SearchForm({ onSearch, loading }) {
   const [startLocation, setStartLocation] = useState('')
   const [endLocation, setEndLocation] = useState('')
+  const [departDate, setDepartDate] = useState('')
+  const [returnDate, setReturnDate] = useState('')
+  const [tripType, setTripType] = useState('oneway')
   const [sortBy, setSortBy] = useState('price')
+
+  // Get today's date in YYYY-MM-DD format for min date
+  const today = new Date().toISOString().split('T')[0]
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (startLocation.trim() && endLocation.trim()) {
-      onSearch(startLocation, endLocation, sortBy)
+    if (startLocation.trim() && endLocation.trim() && departDate) {
+      onSearch({
+        from: startLocation,
+        to: endLocation,
+        departDate,
+        returnDate: tripType === 'roundtrip' ? returnDate : null,
+        tripType,
+        sortBy
+      })
     }
   }
 
@@ -17,36 +30,101 @@ function SearchForm({ onSearch, loading }) {
       <h2 className="text-2xl font-semibold text-gray-800 mb-4">Search Travel Options</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
-            From
+        {/* Trip Type Toggle */}
+        <div className="flex gap-4 mb-4">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="radio"
+              name="tripType"
+              value="oneway"
+              checked={tripType === 'oneway'}
+              onChange={(e) => setTripType(e.target.value)}
+              className="mr-2 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">One Way</span>
           </label>
-          <input
-            type="text"
-            id="start"
-            value={startLocation}
-            onChange={(e) => setStartLocation(e.target.value)}
-            placeholder="Enter starting location (e.g., New York, NY)"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="radio"
+              name="tripType"
+              value="roundtrip"
+              checked={tripType === 'roundtrip'}
+              onChange={(e) => setTripType(e.target.value)}
+              className="mr-2 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Round Trip</span>
+          </label>
         </div>
 
-        <div>
-          <label htmlFor="end" className="block text-sm font-medium text-gray-700 mb-1">
-            To
-          </label>
-          <input
-            type="text"
-            id="end"
-            value={endLocation}
-            onChange={(e) => setEndLocation(e.target.value)}
-            placeholder="Enter destination (e.g., Los Angeles, CA)"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
+        {/* From / To Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
+              From
+            </label>
+            <input
+              type="text"
+              id="start"
+              value={startLocation}
+              onChange={(e) => setStartLocation(e.target.value)}
+              placeholder="City or airport (e.g., LAX, Los Angeles)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="end" className="block text-sm font-medium text-gray-700 mb-1">
+              To
+            </label>
+            <input
+              type="text"
+              id="end"
+              value={endLocation}
+              onChange={(e) => setEndLocation(e.target.value)}
+              placeholder="City or airport (e.g., JFK, New York)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
         </div>
 
+        {/* Date Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="departDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Departure Date
+            </label>
+            <input
+              type="date"
+              id="departDate"
+              value={departDate}
+              onChange={(e) => setDepartDate(e.target.value)}
+              min={today}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
+
+          {tripType === 'roundtrip' && (
+            <div>
+              <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700 mb-1">
+                Return Date
+              </label>
+              <input
+                type="date"
+                id="returnDate"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                min={departDate || today}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required={tripType === 'roundtrip'}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Sort By */}
         <div>
           <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
             Sort By
@@ -58,8 +136,7 @@ function SearchForm({ onSearch, loading }) {
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="price">Price (Lowest First)</option>
-            <option value="time">Time (Fastest First)</option>
-            <option value="value">Best Value</option>
+            <option value="time">Duration (Fastest First)</option>
           </select>
         </div>
 
@@ -68,7 +145,17 @@ function SearchForm({ onSearch, loading }) {
           disabled={loading}
           className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Searching...' : 'Search Travel Options'}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Searching flights...
+            </span>
+          ) : (
+            '🔍 Search Travel Options'
+          )}
         </button>
       </form>
     </div>
@@ -76,4 +163,3 @@ function SearchForm({ onSearch, loading }) {
 }
 
 export default SearchForm
-
