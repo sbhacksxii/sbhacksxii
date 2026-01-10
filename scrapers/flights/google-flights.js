@@ -401,6 +401,16 @@ async function main() {
     // Output results as JSON for potential API use
     console.log('\n📋 JSON Output:');
     console.log(JSON.stringify(results, null, 2));
+    console.log('🔌 Connecting to MongoDB...');
+  await client.connect();
+  console.log('✅ Connected to MongoDB successfully');
+ 
+  const db = client.db(dbName);
+  const collection = db.collection(collectionName);
+  console.log(`💾 Inserting ${results.length} flight(s) into ${dbName}.${collectionName}...`);
+  await collection.insertMany(results);
+  await client.close();
+  console.log('✅ MongoDB connection closed');
 
   } catch (error) {
     console.error('❌ Fatal error:', error.message);
