@@ -6,7 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+# Using npm install instead of npm ci for flexibility during development
+# npm ci requires exact lock file sync, which can be problematic during active development
+RUN npm install --production --omit=dev
 
 # Copy application files
 COPY . .

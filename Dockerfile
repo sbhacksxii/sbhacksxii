@@ -7,7 +7,8 @@ COPY backend/package*.json ./backend/
 
 # Install backend dependencies
 WORKDIR /app/backend
-RUN npm ci --only=production
+# Using npm install instead of npm ci for flexibility during development
+RUN npm install --production --omit=dev
 
 # Copy backend application files
 COPY backend/ ./
