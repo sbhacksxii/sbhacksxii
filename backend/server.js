@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -133,6 +136,33 @@ app.post('/api/search', async (req, res) => {
   }
 });
 
+// Chat endpoint (placeholder for future chatbot integration)
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // TODO: Implement chatbot logic
+    // For now, return a simple response
+    res.json({
+      response: 'I understand you want to search for travel options. Please use the search form to find flights, trains, and buses.'
+    });
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Recommendations endpoint (placeholder)
+app.get('/api/recommendations', async (req, res) => {
+  try {
+    // TODO: Implement recommendations logic
+    res.json({ message: 'Recommendations endpoint - coming soon' });
+  } catch (error) {
+    console.error('Recommendations error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -145,7 +175,9 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       search: 'POST /api/search',
-      health: 'GET /api/health'
+      health: 'GET /api/health',
+      chat: 'POST /api/chat',
+      recommendations: 'GET /api/recommendations'
     }
   });
 });
@@ -159,5 +191,7 @@ app.listen(PORT, () => {
   console.log('📡 API endpoints:');
   console.log('   POST /api/search - Search for travel options');
   console.log('   GET  /api/health - Health check');
+  console.log('   POST /api/chat - Chatbot endpoint');
+  console.log('   GET  /api/recommendations - Recommendations');
   console.log('\n🌐 Allowed origins:', allowedOrigins.join(', ') || 'all .netlify.app domains');
 });
