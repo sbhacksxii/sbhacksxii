@@ -10,8 +10,13 @@ function App() {
   const [error, setError] = useState(null)
   const [sortBy, setSortBy] = useState('price')
 
-  // API URL - uses environment variable in production, falls back to local proxy in dev
-  const API_URL = import.meta.env.VITE_API_URL || ''
+  // API URL - uses environment variable in production
+  // TODO: Replace with your actual Railway URL if env var isn't working
+  const API_URL = 'https://sbhacksxii-production.up.railway.app'
+  
+  // Debug: Log the API URL on first render
+  console.log('🔧 VITE_API_URL env:', import.meta.env.VITE_API_URL)
+  console.log('🔧 Using API_URL:', API_URL)
 
   const handleSearch = async (searchParams) => {
     setLoading(true)
