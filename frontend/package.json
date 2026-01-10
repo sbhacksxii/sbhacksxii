@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node copy-standalone.js",
     "preview": "vite preview"
   },
   "dependencies": {
