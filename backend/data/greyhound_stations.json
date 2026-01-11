@@ -1,0 +1,92 @@
+[
+  {
+    "code": "LAX",
+    "name": "Los Angeles Union Station Bus Terminal",
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "code": "NYC",
+    "name": "New York Port Authority Bus Terminal",
+    "city": "New York",
+    "state": "NY"
+  },
+  {
+    "code": "CHI",
+    "name": "Chicago Greyhound Station",
+    "city": "Chicago",
+    "state": "IL"
+  },
+  {
+    "code": "SFO",
+    "name": "San Francisco Greyhound Station",
+    "city": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "code": "BOS",
+    "name": "Boston South Station Bus Terminal",
+    "city": "Boston",
+    "state": "MA"
+  },
+  {
+    "code": "PHI",
+    "name": "Philadelphia Greyhound Station",
+    "city": "Philadelphia",
+    "state": "PA"
+  },
+  {
+    "code": "SEA",
+    "name": "Seattle Greyhound Station",
+    "city": "Seattle",
+    "state": "WA"
+  },
+  {
+    "code": "DEN",
+    "name": "Denver Greyhound Station",
+    "city": "Denver",
+    "state": "CO"
+  },
+  {
+    "code": "ATL",
+    "name": "Atlanta Greyhound Station",
+    "city": "Atlanta",
+    "state": "GA"
+  },
+  {
+    "code": "DAL",
+    "name": "Dallas Greyhound Station",
+    "city": "Dallas",
+    "state": "TX"
+  },
+  {
+    "code": "PHX",
+    "name": "Phoenix Greyhound Station",
+    "city": "Phoenix",
+    "state": "AZ"
+  },
+  {
+    "code": "LAS",
+    "name": "Las Vegas Greyhound Station",
+    "city": "Las Vegas",
+    "state": "NV"
+  },
+  {
+    "code": "MIA",
+    "name": "Miami Greyhound Station",
+    "city": "Miami",
+    "state": "FL"
+  },
+  {
+    "code": "HOU",
+    "name": "Houston Greyhound Station",
+    "city": "Houston",
+    "state": "TX"
+  },
+  {
+    "code": "SAN",
+    "name": "San Diego Greyhound Station",
+    "city": "San Diego",
+    "state": "CA"
+  }
+]

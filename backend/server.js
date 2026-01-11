@@ -11,6 +11,13 @@ import {
   getAvailableRoutes,
   getGroupedTrainResults
 } from './services/amtrakService.js';
+import {
+  getGreyhoundFare,
+  getStations as getBusStations,
+  getStationByCode as getBusStationByCode,
+  getAvailableRoutes as getBusRoutes,
+  getGroupedBusResults
+} from './services/greyhoundService.js';
 
 dotenv.config();
 
@@ -196,6 +203,66 @@ function formatTrainResults(trainResults, from, to, departDate, returnDate) {
 }
 
 /**
+ * Format bus results to match flight result structure
+ * @param {Array} busResults - Array of grouped bus results
+ * @param {string} from - Origin city name
+ * @param {string} to - Destination city name
+ * @param {string} departDate - Departure date
+ * @param {string|null} returnDate - Return date (if roundtrip)
+ * @returns {Array} Formatted bus results
+ */
+function formatBusResults(busResults, from, to, departDate, returnDate) {
+  return busResults.map(bus => {
+    const stopsText = bus.transfers === 0 ? 'Nonstop' : `${bus.transfers} transfer${bus.transfers > 1 ? 's' : ''}`;
+    const priceFormatted = `$${bus.priceUSD.toFixed(2)}`;
+    
+    // Calculate arrival time from departure time and duration
+    let departureTime = bus.departureTime || null;
+    let arrivalTime = null;
+    
+    if (bus.departureTimeMinutes !== null && bus.departureTimeMinutes !== undefined && bus.durationMin) {
+      const arrivalMinutes = bus.departureTimeMinutes + bus.durationMin;
+      arrivalTime = minutesToTimeString(arrivalMinutes);
+    }
+    
+    return {
+      type: returnDate ? 'roundtrip' : 'oneway',
+      departure: {
+        location: from,
+        time: departureTime
+      },
+      arrival: {
+        location: to,
+        time: arrivalTime
+      },
+      duration: formatDuration(bus.durationMin),
+      departDate: departDate,
+      returnDate: returnDate || null,
+      durationMinutes: bus.durationMin,
+      price: bus.priceUSD,
+      priceFormatted: priceFormatted,
+      currency: 'USD',
+      provider: 'Greyhound',
+      stops: stopsText,
+      bags: null,
+      source: 'Greyhound',
+      rawSummary: `Greyhound bus from ${bus.origin} to ${bus.dest}, ${stopsText}, average price: ${priceFormatted}`,
+      // Additional bus-specific fields
+      busData: {
+        origin: bus.origin,
+        dest: bus.dest,
+        transfers: bus.transfers,
+        sampleCount: bus.sampleCount,
+        priceRange: {
+          min: bus.minPriceUSD,
+          max: bus.maxPriceUSD
+        }
+      }
+    };
+  });
+}
+
+/**
  * Search API endpoint
  * POST /api/search
  */
@@ -256,7 +323,24 @@ app.post('/api/search', async (req, res) => {
       // Continue without train data - don't fail the entire request
     }
 
-    // Step 4: Combine flight and train results
+    // Step 4: Fetch bus data in parallel
+    let busResults = [];
+    try {
+      console.log('🚌 [BUSES] Fetching bus data...');
+      const rawBusResults = await getGroupedBusResults(from, to, 5); // Get top 5 grouped buses
+      
+      if (rawBusResults && rawBusResults.length > 0) {
+        busResults = formatBusResults(rawBusResults, from, to, departDate, returnDate);
+        console.log(`✅ [BUSES] Found ${busResults.length} bus options`);
+      } else {
+        console.log('ℹ️ [BUSES] No bus routes found for this route');
+      }
+    } catch (busError) {
+      console.error('⚠️ [BUSES] Error fetching bus data:', busError.message);
+      // Continue without bus data - don't fail the entire request
+    }
+
+    // Step 5: Combine flight, train, and bus results
     const allResults = [];
     if (flightResults && flightResults.length > 0) {
       allResults.push(...flightResults);
@@ -264,8 +348,11 @@ app.post('/api/search', async (req, res) => {
     if (trainResults && trainResults.length > 0) {
       allResults.push(...trainResults);
     }
+    if (busResults && busResults.length > 0) {
+      allResults.push(...busResults);
+    }
 
-    // Step 5: Sort all results together
+    // Step 6: Sort all results together
     if (allResults.length > 0) {
       if (sortBy === 'price') {
         allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
@@ -274,7 +361,7 @@ app.post('/api/search', async (req, res) => {
       }
     }
 
-    console.log(`\n✅ Returning ${allResults.length} total results (${flightResults?.length || 0} flights, ${trainResults.length} trains)\n`);
+    console.log(`\n✅ Returning ${allResults.length} total results (${flightResults?.length || 0} flights, ${trainResults.length} trains, ${busResults.length} buses)\n`);
     
     res.json(allResults || []);
     
@@ -650,6 +737,102 @@ app.get('/api/amtrak/routes', async (req, res) => {
   }
 });
 
+// =====================================================
+// GREYHOUND BUS ENDPOINTS
+// =====================================================
+
+/**
+ * Get Greyhound fare for a route and date
+ * GET /api/greyhound/fare?origin=LAX&dest=SFO&date=2026-02-15
+ */
+app.get('/api/greyhound/fare', async (req, res) => {
+  try {
+    const { origin, dest, date } = req.query;
+
+    // Validate required parameters
+    if (!origin || !dest || !date) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        required: ['origin', 'dest', 'date'],
+        example: '/api/greyhound/fare?origin=LAX&dest=SFO&date=2026-02-15'
+      });
+    }
+
+    console.log(`\n🚌 [GREYHOUND] Fare lookup: ${origin} → ${dest} on ${date}`);
+
+    const fare = await getGreyhoundFare(origin, dest, date);
+
+    if (!fare) {
+      return res.status(404).json({
+        error: 'No fare found for this route',
+        origin,
+        dest,
+        date,
+        message: 'This route may not exist in our dataset'
+      });
+    }
+
+    console.log(`✅ [GREYHOUND] Found fare: $${fare.priceUSD} (${fare.isEstimated ? 'estimated' : 'exact'})`);
+    res.json(fare);
+
+  } catch (error) {
+    console.error('❌ Greyhound fare lookup error:', error);
+    res.status(500).json({ error: 'Failed to look up Greyhound fare' });
+  }
+});
+
+/**
+ * Get all Greyhound stations
+ * GET /api/greyhound/stations
+ */
+app.get('/api/greyhound/stations', async (req, res) => {
+  try {
+    const stations = await getBusStations();
+    res.json(stations);
+  } catch (error) {
+    console.error('❌ Greyhound stations error:', error);
+    res.status(500).json({ error: 'Failed to load stations' });
+  }
+});
+
+/**
+ * Get a specific station by code
+ * GET /api/greyhound/stations/:code
+ */
+app.get('/api/greyhound/stations/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const station = await getBusStationByCode(code);
+
+    if (!station) {
+      return res.status(404).json({
+        error: 'Station not found',
+        code,
+        message: 'This station code does not exist in our dataset'
+      });
+    }
+
+    res.json(station);
+  } catch (error) {
+    console.error('❌ Greyhound station lookup error:', error);
+    res.status(500).json({ error: 'Failed to look up station' });
+  }
+});
+
+/**
+ * Get all available routes
+ * GET /api/greyhound/routes
+ */
+app.get('/api/greyhound/routes', async (req, res) => {
+  try {
+    const routes = await getBusRoutes();
+    res.json(routes);
+  } catch (error) {
+    console.error('❌ Greyhound routes error:', error);
+    res.status(500).json({ error: 'Failed to load routes' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -670,6 +853,12 @@ app.get('/', (req, res) => {
         stations: 'GET /api/amtrak/stations',
         station: 'GET /api/amtrak/stations/:code',
         routes: 'GET /api/amtrak/routes'
+      },
+      greyhound: {
+        fare: 'GET /api/greyhound/fare?origin=LAX&dest=SFO&date=2026-02-15',
+        stations: 'GET /api/greyhound/stations',
+        station: 'GET /api/greyhound/stations/:code',
+        routes: 'GET /api/greyhound/routes'
       }
     }
   });
@@ -691,5 +880,10 @@ app.listen(PORT, () => {
   console.log('   GET  /api/amtrak/stations - List all stations');
   console.log('   GET  /api/amtrak/stations/:code - Get station by code');
   console.log('   GET  /api/amtrak/routes - List available routes');
+  console.log('   🚌 Greyhound endpoints:');
+  console.log('   GET  /api/greyhound/fare - Look up Greyhound fare');
+  console.log('   GET  /api/greyhound/stations - List all stations');
+  console.log('   GET  /api/greyhound/stations/:code - Get station by code');
+  console.log('   GET  /api/greyhound/routes - List available routes');
   console.log('\n🌐 Allowed origins:', allowedOrigins.join(', ') || 'all .netlify.app domains');
 });
