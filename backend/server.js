@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
+import { MongoClient } from 'mongodb';
 
 dotenv.config();
 
@@ -45,29 +46,37 @@ app.use(express.json());
  * - Return null to trigger scraper if no data or stale
  */
 async function checkDatabase(searchParams) {
-  const { from, to, departDate, returnDate, tripType } = searchParams;
+  const {from, to, departDate, tripType } = searchParams;
   
   console.log('📊 [DATABASE] Checking for cached results...');
   console.log(`   Route: ${from} → ${to}`);
   console.log(`   Date: ${departDate}${returnDate ? ` - ${returnDate}` : ''}`);
   
-  // TODO: Replace with actual database query
-  // Example implementation:
-  // const cachedResults = await db.flights.find({
-  //   from,
-  //   to,
-  //   departDate,
-  //   tripType,
-  //   scrapedAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) } // < 1 hour old
-  // });
-  // 
-  // if (cachedResults && cachedResults.length > 0) {
-  //   console.log('✅ [DATABASE] Found cached results');
-  //   return cachedResults;
-  // }
-  
-  console.log('❌ [DATABASE] No cached results found, will use scraper');
-  return null;
+  const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
+  const client = new MongoClient(uri); 
+  const dbName = "TravelData"; 
+  const collectionName = 'PlaneData';
+
+  try {
+    await client.connect(); 
+    const db = client.db(dbName); 
+    const collection = db.collection(collectionName); 
+    const query = {departure: {location: from}, arrival: {location: to}, date: departDate, tripType};
+    const cachedResults = await collection.find(query).toArray();
+    if (cachedResults && cachedResults.length > 0) {
+     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
+     return cachedResults;
+    }
+
+    console.log('❌ [DATABASE] No cached results found, will use scraper');
+    return null;
+
+  } catch (error) {
+     console.error('❌ Database check error:', error);
+     return null;
+  } finally {
+     await client.close();
+  }
 }
 
 /**
@@ -98,7 +107,7 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 1: Check database first (placeholder)
-    let results = await checkDatabase({ from, to, departDate, returnDate, tripType });
+    let results = await checkDatabase({ from, to, departDate, tripType});
 
     // Step 2: If no database results, use web scraper
     if (!results) {
