@@ -11,9 +11,6 @@ function Chatbot() {
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
 
-  // API URL - matches the one used in App.jsx
-  const API_URL = import.meta.env.VITE_API_URL || 'https://sbhacksxii-production.up.railway.app'
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -28,17 +25,17 @@ function Chatbot() {
 
     const userMessage = { role: 'user', content: input }
     setMessages(prev => [...prev, userMessage])
-    const userInput = input
     setInput('')
     setLoading(true)
 
     try {
-      const response = await fetch(`${API_URL}/api/chat`, {
+      // TODO: Replace with actual chatbot API call
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userInput })
+        body: JSON.stringify({ message: input })
       })
 
       if (!response.ok) {
