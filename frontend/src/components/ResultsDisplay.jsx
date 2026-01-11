@@ -1,7 +1,33 @@
 import { useState } from 'react'
 
-function ResultsDisplay({ results, loading, sortBy, onSortChange }) {
+function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }) {
   const [showAll, setShowAll] = useState(false)
+
+  // Build Google Flights URL from search parameters
+  const buildGoogleFlightsUrl = () => {
+    if (!searchParams) return 'https://www.google.com/travel/flights'
+    
+    const { from, to, departDate, returnDate, tripType } = searchParams
+    
+    // Format dates from YYYY-MM-DD to a format Google Flights understands
+    // Google Flights uses YYYY-MM-DD format in the URL
+    let query = `Flights from ${encodeURIComponent(from)} to ${encodeURIComponent(to)}`
+    
+    if (departDate) {
+      query += ` on ${departDate}`
+    }
+    
+    if (tripType === 'roundtrip' && returnDate) {
+      query += ` returning on ${returnDate}`
+    }
+    
+    return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`
+  }
+
+  const handleGoogleFlightsClick = () => {
+    const url = buildGoogleFlightsUrl()
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
   if (loading) {
     return (
@@ -170,8 +196,14 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange }) {
                     <p className="text-xs text-gray-500">
                       {flight.priceFormatted ? 'per person' : ''}
                     </p>
-                    <button className="mt-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">
-                      Select
+                    <button 
+                      onClick={handleGoogleFlightsClick}
+                      className="mt-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      View on Google Flights
                     </button>
                   </div>
                 </div>
