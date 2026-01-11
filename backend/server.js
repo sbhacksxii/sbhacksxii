@@ -14,7 +14,8 @@ import {
 import { 
   buildConnections, 
   findPotentialHubs, 
-  getMajorHubCodes 
+  getMajorHubCodes,
+  MAJOR_HUB_AIRPORTS
 } from './services/connectionService.js';
 
 dotenv.config();
@@ -522,9 +523,33 @@ app.post('/api/chat', async (req, res) => {
 4. Be conversational, friendly, and use emojis appropriately (but not excessively)
 5. When users ask about specific routes, ALWAYS ask for missing information before filling the form
 
+AVAILABLE AIRPORTS (use these 3-letter codes):
+LAX (Los Angeles), SFO (San Francisco), OAK (Oakland), SJC (San Jose), SAN (San Diego), 
+DEN (Denver), SLC (Salt Lake City), SEA (Seattle), PDX (Portland), ORD (Chicago), 
+DFW (Dallas), AUS (Austin), IAH (Houston), MSY (New Orleans), ATL (Atlanta), 
+JFK (New York), LGA (New York), EWR (Newark), BOS (Boston), DCA (Washington DC), 
+IAD (Washington DC), PHX (Phoenix), LAS (Las Vegas), MIA (Miami), MCO (Orlando), 
+MSP (Minneapolis), DTW (Detroit), CLT (Charlotte), PHL (Philadelphia)
+
+AVAILABLE AMTRAK STATIONS (use these codes):
+LAX (Los Angeles Union Station), SBA (Santa Barbara), SAN (San Diego Santa Fe Depot), 
+SAC (Sacramento Valley Station), CHI (Chicago Union Station), NYP (New York Penn Station), 
+BOS (Boston South Station), WAS (Washington Union Station), PHL (Philadelphia 30th Street), 
+SEA (Seattle King Street), PDX (Portland Union Station), DEN (Denver Union Station), 
+ABQ (Albuquerque), NOL (New Orleans), SFC (San Francisco/Emeryville), OMA (Omaha), 
+SLC (Salt Lake City), KYC (Kansas City), SPK (Spokane)
+
+IMPORTANT LOCATION RULES:
+- When a user mentions a city, help them select the correct airport or station code from the lists above
+- If a user says "New York", ask if they want JFK, LGA, EWR (airports) or NYP (Penn Station for trains)
+- If a user says "Los Angeles", use LAX for both airport and Amtrak station
+- If a user says "San Francisco", ask if they want SFO airport or SFC (Emeryville Amtrak station)
+- Always use the 3-letter codes (e.g., LAX, SFO, NYP) in searchParams, NOT city names
+- If a city is not in the available lists, inform the user which locations we support
+
 IMPORTANT INFORMATION COLLECTION RULES:
 - When a user asks to search for flights/travel, you MUST collect ALL required information before filling the form
-- REQUIRED information: origin city, destination city, departure date, and trip type (oneway vs roundtrip)
+- REQUIRED information: origin airport/station code, destination airport/station code, departure date, and trip type (oneway vs roundtrip)
 - ALWAYS ask: "What date would you like to depart?" if departure date is not provided
 - ALWAYS ask: "Is this a one-way or round-trip?" if trip type is not clear
 - If it's a round trip, ask: "What date would you like to return?" if return date is not provided
@@ -537,8 +562,8 @@ When you have ALL required information (origin, destination, departure date, tri
 {
   "response": "your conversational response confirming the search",
   "searchParams": {
-    "from": "origin city or airport code",
-    "to": "destination city or airport code",
+    "from": "3-letter airport or station code (e.g., LAX, JFK, NYP)",
+    "to": "3-letter airport or station code (e.g., SFO, BOS, CHI)",
     "departDate": "YYYY-MM-DD format (e.g., 2026-01-15). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
     "returnDate": "YYYY-MM-DD format or null (only if roundtrip). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
     "tripType": "oneway" or "roundtrip",
@@ -554,6 +579,7 @@ CRITICAL:
 - Default year is 2026 when user doesn't specify a year
 - Never use MM/DD/YYYY format in the JSON response
 - Always ask for missing information - don't guess or assume
+- ALWAYS use 3-letter codes (LAX, JFK, etc.) in searchParams, not city names
 
 Always respond in valid JSON format.`;
 
@@ -854,6 +880,44 @@ app.get('/api/amtrak/routes', async (req, res) => {
   } catch (error) {
     console.error('❌ Amtrak routes error:', error);
     res.status(500).json({ error: 'Failed to load routes' });
+  }
+});
+
+/**
+ * Get all available locations (airports + Amtrak stations)
+ * GET /api/locations
+ */
+app.get('/api/locations', async (req, res) => {
+  try {
+    const stations = await getStations();
+    
+    // Format airports from MAJOR_HUB_AIRPORTS
+    const airports = MAJOR_HUB_AIRPORTS.map(airport => ({
+      code: airport.code,
+      name: `${airport.city} Airport`,
+      city: airport.city,
+      state: airport.state,
+      type: 'airport'
+    }));
+    
+    // Format Amtrak stations
+    const amtrakStations = stations.map(station => ({
+      code: station.code,
+      name: station.name,
+      city: station.city,
+      state: station.state,
+      type: 'station'
+    }));
+    
+    // Combine and sort by city name
+    const allLocations = [...airports, ...amtrakStations].sort((a, b) => 
+      a.city.localeCompare(b.city)
+    );
+    
+    res.json(allLocations);
+  } catch (error) {
+    console.error('❌ Locations error:', error);
+    res.status(500).json({ error: 'Failed to load locations' });
   }
 });
 

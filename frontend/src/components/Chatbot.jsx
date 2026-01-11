@@ -5,7 +5,7 @@ function Chatbot({ onFormUpdate }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hi! I can help you find the best travel options. Try asking me "Find the cheapest way to get from New York to Los Angeles". You can also use the microphone button to speak with me!'
+      content: 'Hi! I can help you find the best travel options. ✈️🚂\n\nTry asking me things like:\n• "Find flights from LAX to JFK"\n• "Search for trains from NYC to Boston"\n• "What\'s the cheapest way from SFO to Seattle?"\n\nI can help you search airports and Amtrak stations - just tell me where you want to go!'
     }
   ])
   const [input, setInput] = useState('')

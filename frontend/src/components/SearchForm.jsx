@@ -1,4 +1,149 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+// Autocomplete dropdown component
+function LocationAutocomplete({ 
+  id, 
+  value, 
+  onChange, 
+  placeholder, 
+  locations, 
+  required 
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [inputValue, setInputValue] = useState(value || '')
+  const [filteredLocations, setFilteredLocations] = useState([])
+  const wrapperRef = useRef(null)
+  const inputRef = useRef(null)
+
+  // Update inputValue when value prop changes (for controlled component)
+  useEffect(() => {
+    if (value) {
+      // Find the matching location to show its display name
+      const match = locations.find(loc => loc.code === value)
+      if (match) {
+        setInputValue(`${match.code} - ${match.city} (${match.type === 'airport' ? '✈️' : '🚂'})`)
+      } else {
+        setInputValue(value)
+      }
+    } else {
+      setInputValue('')
+    }
+  }, [value, locations])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Filter locations based on input
+  useEffect(() => {
+    if (!inputValue.trim()) {
+      setFilteredLocations(locations.slice(0, 20)) // Show first 20 when empty
+    } else {
+      const searchTerm = inputValue.toLowerCase()
+      const filtered = locations.filter(loc => 
+        loc.code.toLowerCase().includes(searchTerm) ||
+        loc.city.toLowerCase().includes(searchTerm) ||
+        loc.name.toLowerCase().includes(searchTerm) ||
+        loc.state.toLowerCase().includes(searchTerm)
+      ).slice(0, 15) // Limit results for performance
+      setFilteredLocations(filtered)
+    }
+  }, [inputValue, locations])
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value
+    setInputValue(newValue)
+    setIsOpen(true)
+    
+    // If user clears the input, also clear the actual value
+    if (!newValue.trim()) {
+      onChange('')
+    }
+  }
+
+  const handleSelect = (location) => {
+    onChange(location.code)
+    setInputValue(`${location.code} - ${location.city} (${location.type === 'airport' ? '✈️' : '🚂'})`)
+    setIsOpen(false)
+    inputRef.current?.blur()
+  }
+
+  const handleFocus = () => {
+    setIsOpen(true)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false)
+      inputRef.current?.blur()
+    } else if (e.key === 'Enter' && filteredLocations.length > 0) {
+      e.preventDefault()
+      handleSelect(filteredLocations[0])
+    }
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        id={id}
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        required={required}
+        autoComplete="off"
+      />
+      
+      {isOpen && filteredLocations.length > 0 && (
+        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredLocations.map((location, index) => (
+            <li
+              key={`${location.code}-${location.type}-${index}`}
+              onClick={() => handleSelect(location)}
+              className="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+            >
+              <span className="text-lg">
+                {location.type === 'airport' ? '✈️' : '🚂'}
+              </span>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">
+                  {location.code} - {location.city}, {location.state}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {location.name}
+                </div>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded ${
+                location.type === 'airport' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'bg-green-100 text-green-700'
+              }`}>
+                {location.type === 'airport' ? 'Airport' : 'Station'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      
+      {isOpen && filteredLocations.length === 0 && inputValue.trim() && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-4 text-center text-gray-500">
+          No airports or stations found matching "{inputValue}"
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   // Use controlled props if provided, otherwise use internal state
@@ -8,6 +153,10 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   const [internalReturnDate, setInternalReturnDate] = useState('')
   const [internalTripType, setInternalTripType] = useState('oneway')
   const [internalSortBy, setInternalSortBy] = useState('price')
+  
+  // Locations data from API
+  const [locations, setLocations] = useState([])
+  const [locationsLoading, setLocationsLoading] = useState(true)
 
   // Use controlled values if provided, otherwise use internal state
   const startLocation = formValues?.from ?? internalStartLocation
@@ -16,6 +165,37 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   const returnDate = formValues?.returnDate ?? internalReturnDate
   const tripType = formValues?.tripType ?? internalTripType
   const sortBy = formValues?.sortBy ?? internalSortBy
+
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        // Use the same API URL pattern as the rest of the app
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+        const API_URL = isProduction 
+          ? 'https://sbhacksxii-production.up.railway.app'
+          : (import.meta.env.VITE_API_URL || '')
+        
+        const requestUrl = API_URL ? `${API_URL}/api/locations` : '/api/locations'
+        console.log('Fetching locations from:', requestUrl)
+        
+        const response = await fetch(requestUrl)
+        if (response.ok) {
+          const data = await response.json()
+          setLocations(data)
+          console.log(`Loaded ${data.length} locations`)
+        } else {
+          console.error('Failed to fetch locations:', response.status)
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+      } finally {
+        setLocationsLoading(false)
+      }
+    }
+    
+    fetchLocations()
+  }, [])
 
   // Update internal state when controlled props change
   useEffect(() => {
@@ -121,30 +301,40 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
             <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
               From
             </label>
-            <input
-              type="text"
-              id="start"
-              value={startLocation}
-              onChange={(e) => updateStartLocation(e.target.value)}
-              placeholder="City or airport (e.g., LAX, Los Angeles)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
+            {locationsLoading ? (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-400">
+                Loading locations...
+              </div>
+            ) : (
+              <LocationAutocomplete
+                id="start"
+                value={startLocation}
+                onChange={updateStartLocation}
+                placeholder="Airport or station (e.g., LAX, SBA)"
+                locations={locations}
+                required
+              />
+            )}
           </div>
 
           <div>
             <label htmlFor="end" className="block text-sm font-medium text-gray-700 mb-1">
               To
             </label>
-            <input
-              type="text"
-              id="end"
-              value={endLocation}
-              onChange={(e) => updateEndLocation(e.target.value)}
-              placeholder="City or airport (e.g., JFK, New York)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
+            {locationsLoading ? (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-400">
+                Loading locations...
+              </div>
+            ) : (
+              <LocationAutocomplete
+                id="end"
+                value={endLocation}
+                onChange={updateEndLocation}
+                placeholder="Airport or station (e.g., JFK, NYP)"
+                locations={locations}
+                required
+              />
+            )}
           </div>
         </div>
 
@@ -201,7 +391,7 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || locationsLoading}
           className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
