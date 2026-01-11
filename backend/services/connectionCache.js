@@ -1,32 +1,31 @@
 /**
  * =====================================================
- * CONNECTION CACHE SERVICE
+ * CONNECTION CACHE SERVICE (OPTIMIZED)
  * =====================================================
  * 
- * Caches computed connection routes in MongoDB to avoid
- * recalculating connections for the same route.
+ * Caches computed connection routes to avoid recalculating.
+ * Uses global connection pool for fast database access.
  * 
  * Cache Structure:
- * - Each entry stores connections for a specific origin-destination pair
- * - Entries expire after a configurable TTL (default 7 days)
- * - Amtrak route metadata is cached separately (longer TTL since it's static)
+ * - Memory cache: 30 min TTL (fastest)
+ * - MongoDB cache: 7 day TTL (persistent)
  */
 
-import { MongoClient } from 'mongodb';
-
-// MongoDB connection string (same as main server)
-const MONGO_URI = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
-const DB_NAME = "TravelData";
-const CONNECTION_CACHE_COLLECTION = "ConnectionCache";
-const AMTRAK_ROUTE_CACHE_COLLECTION = "AmtrakRouteCache";
+import { 
+  getCollection, 
+  getCachedConnection, 
+  saveCachedConnection,
+  initializeIndexes,
+  COLLECTIONS 
+} from './database.js';
 
 // Cache TTL in milliseconds
-const CONNECTION_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days for connections
-const AMTRAK_ROUTE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days for Amtrak routes (static data)
+const CONNECTION_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const AMTRAK_ROUTE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // In-memory cache for hot routes (very fast lookup)
 const memoryCache = new Map();
-const MEMORY_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes in-memory
+const MEMORY_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Generate cache key for a route
@@ -37,6 +36,8 @@ function generateCacheKey(origin, destination, tripType = 'oneway') {
 
 /**
  * Get cached connections from memory first, then MongoDB
+ * OPTIMIZED: Uses connection pool instead of new connection each time
+ * 
  * @param {string} origin - Origin code
  * @param {string} destination - Destination code
  * @param {string} tripType - 'oneway' or 'roundtrip'
@@ -45,28 +46,19 @@ function generateCacheKey(origin, destination, tripType = 'oneway') {
 export async function getCachedConnections(origin, destination, tripType = 'oneway') {
   const cacheKey = generateCacheKey(origin, destination, tripType);
   
-  // Check memory cache first (fastest)
+  // Check memory cache first (fastest - < 1ms)
   const memoryCached = memoryCache.get(cacheKey);
   if (memoryCached && Date.now() - memoryCached.timestamp < MEMORY_CACHE_TTL_MS) {
-    console.log(`⚡ [CACHE] Memory cache hit: ${cacheKey}`);
+    console.log(`⚡ [CACHE] Memory hit: ${cacheKey}`);
     return memoryCached.data;
   }
   
-  // Check MongoDB cache
-  const client = new MongoClient(MONGO_URI);
-  
+  // Check MongoDB cache (uses connection pool - fast)
   try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    const collection = db.collection(CONNECTION_CACHE_COLLECTION);
-    
-    const cached = await collection.findOne({
-      cacheKey: cacheKey,
-      expiresAt: { $gt: new Date() } // Only get non-expired entries
-    });
+    const cached = await getCachedConnection(cacheKey);
     
     if (cached) {
-      console.log(`✅ [CACHE] MongoDB cache hit: ${cacheKey}`);
+      console.log(`✅ [CACHE] DB hit: ${cacheKey}`);
       
       // Store in memory cache for faster subsequent access
       memoryCache.set(cacheKey, {
@@ -77,19 +69,19 @@ export async function getCachedConnections(origin, destination, tripType = 'onew
       return cached;
     }
     
-    console.log(`❌ [CACHE] Cache miss: ${cacheKey}`);
+    console.log(`❌ [CACHE] Miss: ${cacheKey}`);
     return null;
     
   } catch (error) {
-    console.error(`⚠️ [CACHE] Error reading cache: ${error.message}`);
+    console.error(`⚠️ [CACHE] Error: ${error.message}`);
     return null;
-  } finally {
-    await client.close();
   }
 }
 
 /**
  * Store connections in cache
+ * OPTIMIZED: Uses connection pool, stores in memory immediately
+ * 
  * @param {string} origin - Origin code
  * @param {string} destination - Destination code
  * @param {Array} connections - Connection itineraries to cache
@@ -111,39 +103,23 @@ export async function cacheConnections(origin, destination, connections, hubsInf
     expiresAt: new Date(Date.now() + CONNECTION_CACHE_TTL_MS)
   };
   
-  // Store in memory cache immediately
+  // Store in memory cache immediately (sync)
   memoryCache.set(cacheKey, {
     data: cacheEntry,
     timestamp: Date.now()
   });
   
-  // Store in MongoDB (async, don't wait)
-  const client = new MongoClient(MONGO_URI);
-  
+  // Store in MongoDB (uses connection pool)
   try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    const collection = db.collection(CONNECTION_CACHE_COLLECTION);
-    
-    // Upsert the cache entry
-    await collection.updateOne(
-      { cacheKey: cacheKey },
-      { $set: cacheEntry },
-      { upsert: true }
-    );
-    
+    await saveCachedConnection(cacheEntry);
     console.log(`💾 [CACHE] Stored ${connections.length} connections for ${cacheKey}`);
-    
   } catch (error) {
-    console.error(`⚠️ [CACHE] Error storing cache: ${error.message}`);
-  } finally {
-    await client.close();
+    console.error(`⚠️ [CACHE] Store error: ${error.message}`);
   }
 }
 
 /**
  * Get cached Amtrak route metadata
- * This includes which hubs can serve which destinations
  */
 export async function getCachedAmtrakRoutes(origin, destination) {
   const cacheKey = `amtrak-routes-${origin.toUpperCase()}-${destination.toUpperCase()}`;
@@ -154,13 +130,8 @@ export async function getCachedAmtrakRoutes(origin, destination) {
     return memoryCached.data;
   }
   
-  const client = new MongoClient(MONGO_URI);
-  
   try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    const collection = db.collection(AMTRAK_ROUTE_CACHE_COLLECTION);
-    
+    const collection = await getCollection(COLLECTIONS.AMTRAK_ROUTE_CACHE);
     const cached = await collection.findOne({
       cacheKey: cacheKey,
       expiresAt: { $gt: new Date() }
@@ -172,12 +143,9 @@ export async function getCachedAmtrakRoutes(origin, destination) {
     }
     
     return null;
-    
   } catch (error) {
-    console.error(`⚠️ [CACHE] Error reading Amtrak route cache: ${error.message}`);
+    console.error(`⚠️ [CACHE] Amtrak route cache error: ${error.message}`);
     return null;
-  } finally {
-    await client.close();
   }
 }
 
@@ -199,100 +167,23 @@ export async function cacheAmtrakRoutes(origin, destination, hubsToDestination, 
   
   memoryCache.set(cacheKey, { data: cacheEntry, timestamp: Date.now() });
   
-  const client = new MongoClient(MONGO_URI);
-  
   try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    const collection = db.collection(AMTRAK_ROUTE_CACHE_COLLECTION);
-    
+    const collection = await getCollection(COLLECTIONS.AMTRAK_ROUTE_CACHE);
     await collection.updateOne(
       { cacheKey: cacheKey },
       { $set: cacheEntry },
       { upsert: true }
     );
-    
   } catch (error) {
-    console.error(`⚠️ [CACHE] Error storing Amtrak route cache: ${error.message}`);
-  } finally {
-    await client.close();
+    console.error(`⚠️ [CACHE] Amtrak route store error: ${error.message}`);
   }
 }
 
 /**
- * Clear expired cache entries (maintenance task)
- */
-export async function cleanupExpiredCache() {
-  const client = new MongoClient(MONGO_URI);
-  
-  try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    
-    // Clean connection cache
-    const connResult = await db.collection(CONNECTION_CACHE_COLLECTION).deleteMany({
-      expiresAt: { $lt: new Date() }
-    });
-    
-    // Clean Amtrak route cache
-    const amtrakResult = await db.collection(AMTRAK_ROUTE_CACHE_COLLECTION).deleteMany({
-      expiresAt: { $lt: new Date() }
-    });
-    
-    console.log(`🧹 [CACHE] Cleaned up ${connResult.deletedCount} connection entries, ${amtrakResult.deletedCount} Amtrak route entries`);
-    
-    // Clean memory cache
-    const now = Date.now();
-    for (const [key, value] of memoryCache.entries()) {
-      if (now - value.timestamp > MEMORY_CACHE_TTL_MS) {
-        memoryCache.delete(key);
-      }
-    }
-    
-  } catch (error) {
-    console.error(`⚠️ [CACHE] Cleanup error: ${error.message}`);
-  } finally {
-    await client.close();
-  }
-}
-
-/**
- * Create indexes for cache collections (call once on startup)
+ * Initialize cache indexes (delegates to database.js)
  */
 export async function initializeCacheIndexes() {
-  const client = new MongoClient(MONGO_URI);
-  
-  try {
-    await client.connect();
-    const db = client.db(DB_NAME);
-    
-    // Create indexes for connection cache
-    await db.collection(CONNECTION_CACHE_COLLECTION).createIndex(
-      { cacheKey: 1 },
-      { unique: true }
-    );
-    await db.collection(CONNECTION_CACHE_COLLECTION).createIndex(
-      { expiresAt: 1 },
-      { expireAfterSeconds: 0 } // TTL index - MongoDB will auto-delete expired docs
-    );
-    
-    // Create indexes for Amtrak route cache
-    await db.collection(AMTRAK_ROUTE_CACHE_COLLECTION).createIndex(
-      { cacheKey: 1 },
-      { unique: true }
-    );
-    await db.collection(AMTRAK_ROUTE_CACHE_COLLECTION).createIndex(
-      { expiresAt: 1 },
-      { expireAfterSeconds: 0 }
-    );
-    
-    console.log('✅ [CACHE] Cache indexes initialized');
-    
-  } catch (error) {
-    console.error(`⚠️ [CACHE] Index initialization error: ${error.message}`);
-  } finally {
-    await client.close();
-  }
+  await initializeIndexes();
 }
 
 /**
@@ -308,25 +199,28 @@ export function getCacheStats() {
 }
 
 /**
- * Clear all caches (for testing/debugging)
+ * Clear memory cache (for testing)
+ */
+export function clearMemoryCache() {
+  memoryCache.clear();
+  console.log('🗑️ [CACHE] Memory cache cleared');
+}
+
+/**
+ * Clear all caches
  */
 export async function clearAllCaches() {
   memoryCache.clear();
   
-  const client = new MongoClient(MONGO_URI);
-  
   try {
-    await client.connect();
-    const db = client.db(DB_NAME);
+    const connCollection = await getCollection(COLLECTIONS.CONNECTION_CACHE);
+    const amtrakCollection = await getCollection(COLLECTIONS.AMTRAK_ROUTE_CACHE);
     
-    await db.collection(CONNECTION_CACHE_COLLECTION).deleteMany({});
-    await db.collection(AMTRAK_ROUTE_CACHE_COLLECTION).deleteMany({});
+    await connCollection.deleteMany({});
+    await amtrakCollection.deleteMany({});
     
     console.log('🗑️ [CACHE] All caches cleared');
-    
   } catch (error) {
-    console.error(`⚠️ [CACHE] Clear cache error: ${error.message}`);
-  } finally {
-    await client.close();
+    console.error(`⚠️ [CACHE] Clear error: ${error.message}`);
   }
 }

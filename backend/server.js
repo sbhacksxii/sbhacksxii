@@ -5,7 +5,6 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
-import { MongoClient } from 'mongodb';
 import Groq from 'groq-sdk';
 import { 
   getAmtrakFare, 
@@ -30,6 +29,14 @@ import {
   initializeCacheIndexes,
   getCacheStats as getConnectionCacheStats
 } from './services/connectionCache.js';
+import {
+  getDatabase,
+  queryFlights,
+  batchQueryFlights,
+  initializeIndexes as initializeDbIndexes,
+  closeDatabase,
+  isDatabaseHealthy
+} from './services/database.js';
 
 dotenv.config();
 
@@ -97,15 +104,10 @@ app.use(express.json());
 
 /**
  * =====================================================
- * DATABASE PLACEHOLDER
+ * DATABASE CHECK (OPTIMIZED with connection pool)
  * =====================================================
- * This function should check the database for cached/stored flight data
- * before falling back to the web scraper.
- * 
- * TODO: Implement database lookup
- * - Check if we have recent data for this route
- * - Return cached results if fresh (e.g., < 1 hour old)
- * - Return null to trigger scraper if no data or stale
+ * Checks for cached flight data using the global connection pool.
+ * No more creating new connections for each request!
  */
 async function checkDatabase(searchParams) {
   const {from, to, departDate, returnDate, tripType} = searchParams;
@@ -115,75 +117,31 @@ async function checkDatabase(searchParams) {
   console.log(`   Date: ${departDate}${returnDate ? ` - ${returnDate}` : ''}`);
   console.log(`   Trip Type: ${tripType || 'oneway'}`);
   
-  const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
-  const client = new MongoClient(uri); 
-  const dbName = "TravelData"; 
-  const collectionName = 'PlaneData';
-
   try {
-    await client.connect(); 
-    const db = client.db(dbName); 
-    const collection = db.collection(collectionName); 
+    const type = tripType === 'roundtrip' ? 'roundtrip' : 'oneway';
+    const cachedResults = await queryFlights(from, to, type, departDate, returnDate);
     
-    // Use case-insensitive regex for location matching
-    // Also check for the departDate and trip type to get relevant cached data
-    const query = {
-      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
-      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
-      departDate: departDate,
-      // Filter by trip type to ensure one-way and round-trip results are cached separately
-      type: tripType === 'roundtrip' ? 'roundtrip' : 'oneway'
-    };
-    
-    // For round-trip searches, also match the specific return date
-    if (tripType === 'roundtrip' && returnDate) {
-      query.returnDate = returnDate;
-    }
-    
-    const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
-     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached ${tripType} results`);
-     return cachedResults;
+      console.log(`✅ [DATABASE] Found ${cachedResults.length} cached ${tripType} results`);
+      return cachedResults;
     }
 
     console.log(`❌ [DATABASE] No cached ${tripType} results found, will use scraper`);
     return null;
 
-   } catch(error) {
-     console.error('❌ Database check error:', error);
-     return null;
-  } finally {
-     await client.close();
+  } catch(error) {
+    console.error('❌ Database check error:', error);
+    return null;
   }
 }
 
 /**
- * Fetch ONE-WAY flights from database for a specific route (for connections)
- * Connections always use one-way pricing since roundtrip prices differ
- */
-async function fetchFlightsFromDBForRoute(from, to, client, collection) {
-  try {
-    const query = {
-      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
-      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
-      type: 'oneway' // Only fetch one-way flights for connections
-    };
-    const flights = await collection.find(query).toArray();
-    return flights;
-  } catch (error) {
-    console.error(`   ❌ DB error for ${from}→${to}: ${error.message}`);
-    return [];
-  }
-}
-
-/**
- * Fetch hub flights for connections
- * Checks database first, then scrapes missing routes if needed
+ * Fetch hub flights for connections (OPTIMIZED)
  * 
- * IMPORTANT: Connections are always one-way. This function only fetches one-way flights.
- * 
- * For flight-to-flight connections, uses geographic corridor filtering to only
- * search for hubs that lie between origin and destination.
+ * OPTIMIZATIONS:
+ * - Uses global connection pool instead of new connections
+ * - Single batch query for all routes instead of sequential queries
+ * - Only scrapes missing routes if needed
  * 
  * @param {string} from - Origin airport code
  * @param {string} to - Destination airport code
@@ -192,117 +150,84 @@ async function fetchFlightsFromDBForRoute(from, to, client, collection) {
  */
 async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
   console.log('\n🔗 [HUBS] Fetching flight data for connection hubs...');
-  console.log(`   ℹ️  Connections use ONE-WAY flights only`);
-  console.log(`   📏 Corridor width: ${corridorWidthMiles} miles`);
-  
-  const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
-  const client = new MongoClient(uri);
+  const startTime = Date.now();
   
   try {
-    await client.connect();
-    const db = client.db("TravelData");
-    const collection = db.collection('PlaneData');
-    
-    // Get relevant hubs for this route (with corridor filtering for flight-flight)
+    // Get relevant hubs for this route (uses pre-computed indexes)
     const hubs = await findPotentialHubs(from, to, false, corridorWidthMiles);
     
-    // Collect hub codes to search
     const amtrakHubsTo = hubs.flightToAmtrak?.hubs || [];
     const amtrakHubsFrom = hubs.amtrakToFlight?.hubs || [];
-    
-    // Get flight hubs from the corridor (already filtered by findPotentialHubs)
     const flightHubsInCorridor = hubs.flightToFlight?.hubs || [];
     
     console.log(`   Amtrak hubs (to dest): ${amtrakHubsTo.join(', ') || 'none'}`);
     console.log(`   Amtrak hubs (from origin): ${amtrakHubsFrom.join(', ') || 'none'}`);
     console.log(`   Flight hubs in corridor: ${flightHubsInCorridor.join(', ') || 'none'}`);
     
-    const allHubFlights = [];
-    const routesToScrape = [];
-    
     // Build list of routes we need
     const routesToCheck = [];
     
-    // Routes for Flight → Amtrak connections (origin → amtrak hub)
+    // Routes for Flight → Amtrak connections
     for (const hub of amtrakHubsTo) {
       if (hub.toUpperCase() !== from.toUpperCase()) {
-        routesToCheck.push({ from, to: hub, type: 'flight-amtrak' });
+        routesToCheck.push({ from, to: hub });
       }
     }
     
-    // Routes for Amtrak → Flight connections (amtrak hub → destination)
+    // Routes for Amtrak → Flight connections
     for (const hub of amtrakHubsFrom) {
       if (hub.toUpperCase() !== to.toUpperCase()) {
-        routesToCheck.push({ from: hub, to, type: 'amtrak-flight' });
+        routesToCheck.push({ from: hub, to });
       }
     }
     
-    // Routes for Flight → Flight connections (origin → hub → destination)
-    // Only search hubs that are in the geographic corridor
+    // Routes for Flight → Flight connections
     for (const hub of flightHubsInCorridor) {
-      routesToCheck.push({ from, to: hub, type: 'flight-flight-leg1' });
-      routesToCheck.push({ from: hub, to, type: 'flight-flight-leg2' });
+      routesToCheck.push({ from, to: hub });
+      routesToCheck.push({ from: hub, to });
     }
     
-    // Check database for each route (only one-way flights)
-    console.log(`\n   Checking ${routesToCheck.length} hub routes in database...`);
+    if (routesToCheck.length === 0) {
+      console.log(`   ℹ️ No hub routes to check`);
+      return [];
+    }
     
-    for (const route of routesToCheck) {
-      // Query for one-way flights only
-      const query = {
-        'departure.location': { $regex: new RegExp(`^${route.from}$`, 'i') },
-        'arrival.location': { $regex: new RegExp(`^${route.to}$`, 'i') },
-        type: 'oneway'
-      };
-      
-      try {
-        const dbFlights = await collection.find(query).toArray();
-        
-        if (dbFlights.length > 0) {
-          console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} one-way flights`);
-          allHubFlights.push(...dbFlights);
-        } else {
-          // Mark for scraping
-          routesToScrape.push(route);
-          console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
-        }
-      } catch (error) {
-        console.error(`   ❌ DB error for ${route.from}→${route.to}: ${error.message}`);
-        routesToScrape.push(route);
+    // OPTIMIZED: Single batch query for all routes at once!
+    console.log(`   ⚡ Batch querying ${routesToCheck.length} hub routes...`);
+    const allHubFlights = await batchQueryFlights(routesToCheck, 'oneway');
+    
+    // Find which routes are missing (no results in DB)
+    const routesWithFlights = new Set();
+    for (const flight of allHubFlights) {
+      const depLoc = flight.departure?.location?.toUpperCase();
+      const arrLoc = flight.arrival?.location?.toUpperCase();
+      if (depLoc && arrLoc) {
+        routesWithFlights.add(`${depLoc}-${arrLoc}`);
       }
     }
+    
+    const routesToScrape = routesToCheck.filter(route => {
+      const key = `${route.from.toUpperCase()}-${route.to.toUpperCase()}`;
+      return !routesWithFlights.has(key);
+    });
     
     // Scrape missing routes (limit to avoid timeout)
-    // Always scrape as ONE-WAY (null returnDate)
-    const MAX_SCRAPES = 3; // Limit concurrent scrapes to avoid long wait times
+    const MAX_SCRAPES = 2; // Reduced since batch query is faster
     const scrapesToRun = routesToScrape.slice(0, MAX_SCRAPES);
     
     if (scrapesToRun.length > 0) {
-      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes as ONE-WAY (max ${MAX_SCRAPES})...`);
+      console.log(`   🌐 Scraping ${scrapesToRun.length} missing routes...`);
       
       for (const route of scrapesToRun) {
         try {
-          console.log(`   Scraping: ${route.from}→${route.to} (one-way)...`);
-          const scrapedFlights = await scrapeGoogleFlights(
-            route.from,
-            route.to,
-            departDate,
-            null // ALWAYS null - connections use one-way flights only
-          );
-          
+          const scrapedFlights = await scrapeGoogleFlights(route.from, route.to, departDate, null);
           if (scrapedFlights && scrapedFlights.length > 0) {
             console.log(`   ✅ Scraped ${route.from}→${route.to}: ${scrapedFlights.length} flights`);
             allHubFlights.push(...scrapedFlights);
-          } else {
-            console.log(`   ⚠️ No flights found: ${route.from}→${route.to}`);
           }
         } catch (scrapeError) {
           console.error(`   ❌ Scrape failed ${route.from}→${route.to}: ${scrapeError.message}`);
         }
-      }
-      
-      if (routesToScrape.length > MAX_SCRAPES) {
-        console.log(`   ℹ️ Skipped ${routesToScrape.length - MAX_SCRAPES} routes to avoid timeout`);
       }
     }
     
@@ -317,14 +242,13 @@ async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAUL
       }
     }
     
-    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length} (all one-way)`);
+    const elapsed = Date.now() - startTime;
+    console.log(`   📊 Hub flights: ${uniqueFlights.length} in ${elapsed}ms`);
     return uniqueFlights;
     
   } catch (error) {
     console.error('❌ [HUBS] Error fetching hub flights:', error.message);
     return [];
-  } finally {
-    await client.close();
   }
 }
 
@@ -780,28 +704,28 @@ app.post('/api/search', async (req, res) => {
       // Continue without train data - don't fail the entire request
     }
 
-    // Step 4: Fetch hub flights for connections
-    // This populates the database with ONE-WAY flights to/from major hubs
-    // Uses geographic corridor filtering for flight-to-flight connections
-    // Corridor width can be adjusted (default 200 miles)
-    let hubFlights = [];
-    try {
-      hubFlights = await fetchHubFlights(from, to, departDate); // Always one-way for connections
-    } catch (hubError) {
-      console.error('⚠️ [HUBS] Error fetching hub flights:', hubError.message);
-    }
-
-    // Step 5: Build connections (flight + train combinations, flight + flight via hubs)
-    // Check cache first for connections
+    // Step 4: Check connection cache FIRST (before fetching hub flights!)
+    // This is the key optimization - skip hub flights entirely if we have cached connections
     let connectionResults = [];
     const cachedConnections = await getCachedConnections(from, to, 'oneway');
     
     if (cachedConnections && cachedConnections.connections && cachedConnections.connections.length > 0) {
-      // Use cached connections
+      // ⚡ CACHE HIT - Use cached connections, skip hub flight fetching entirely!
       connectionResults = cachedConnections.connections;
-      console.log(`⚡ [CONNECTIONS] Using ${connectionResults.length} cached connections`);
+      console.log(`⚡ [CONNECTIONS] Cache hit! Using ${connectionResults.length} cached connections (skipping hub flights)`);
     } else {
-      // Combine direct flights with hub flights for connection building
+      // ❌ CACHE MISS - Need to fetch hub flights and build connections
+      console.log('🔗 [CONNECTIONS] Cache miss, building connections...');
+      
+      // Step 4a: Fetch hub flights (only if cache miss)
+      let hubFlights = [];
+      try {
+        hubFlights = await fetchHubFlights(from, to, departDate);
+      } catch (hubError) {
+        console.error('⚠️ [HUBS] Error fetching hub flights:', hubError.message);
+      }
+      
+      // Step 4b: Build connections
       const allFlightsForConnections = [...(flightResults || []), ...hubFlights];
       
       // Deduplicate flights
@@ -815,9 +739,7 @@ app.post('/api/search', async (req, res) => {
       
       if (uniqueFlightsForConnections.length > 0) {
         try {
-          console.log('\n🔗 [CONNECTIONS] Building multi-modal connections...');
-          console.log(`   Total flights available: ${uniqueFlightsForConnections.length}`);
-          console.log('   Searching: Flight → Amtrak, Amtrak → Flight, Flight → Flight via hubs');
+          console.log(`   Building connections from ${uniqueFlightsForConnections.length} flights...`);
           
           connectionResults = await buildConnections(
             uniqueFlightsForConnections, 
@@ -838,15 +760,15 @@ app.post('/api/search', async (req, res) => {
             console.log(`   Breakdown: ${flightAmtrak} flight→amtrak, ${amtrakFlight} amtrak→flight, ${flightFlight} flight→flight`);
           }
           
-          // Cache the connections for future requests (don't await - do it in background)
+          // Cache the connections for future requests (async, don't block)
           if (connectionResults.length > 0) {
-            const hubsInfo = await findPotentialHubs(from, to, false);
-            cacheConnections(from, to, connectionResults, hubsInfo, 'oneway')
-              .catch(err => console.error('⚠️ [CACHE] Background cache error:', err.message));
+            findPotentialHubs(from, to, false).then(hubsInfo => {
+              cacheConnections(from, to, connectionResults, hubsInfo, 'oneway')
+                .catch(err => console.error('⚠️ [CACHE] Background cache error:', err.message));
+            });
           }
         } catch (connectionError) {
           console.error('⚠️ [CONNECTIONS] Error building connections:', connectionError.message);
-          // Continue without connections - don't fail the entire request
         }
       }
     }
@@ -1344,8 +1266,13 @@ app.get('/api/airports/validate/:code', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  const dbHealthy = await isDatabaseHealthy();
+  res.json({ 
+    status: dbHealthy ? 'ok' : 'degraded',
+    database: dbHealthy ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString() 
+  });
 });
 
 // Cache stats endpoint (for monitoring)
@@ -1391,24 +1318,48 @@ app.get('/', (req, res) => {
 // Initialize indexes and caches on startup
 async function initializeServer() {
   console.log('\n🔧 [INIT] Initializing server...');
+  const startTime = Date.now();
   
   try {
+    // Initialize MongoDB connection pool FIRST (most important)
+    console.log('🔌 [INIT] Establishing database connection pool...');
+    await getDatabase();
+    
+    // Initialize database indexes
+    console.log('📊 [INIT] Initializing database indexes...');
+    await initializeDbIndexes();
+    
     // Initialize Amtrak indexed lookups (builds O(1) lookup maps)
     console.log('🚂 [INIT] Building Amtrak indexes...');
     await ensureIndexes();
     const amtrakStats = getCacheStats();
     console.log(`   ✅ Amtrak indexes ready: ${amtrakStats.uniqueRoutes} routes, ${amtrakStats.preComputedGroups} pre-computed groups`);
     
-    // Initialize MongoDB cache indexes
+    // Initialize connection cache indexes
     console.log('💾 [INIT] Initializing connection cache indexes...');
     await initializeCacheIndexes();
-    console.log('   ✅ Cache indexes ready');
+    
+    const elapsed = Date.now() - startTime;
+    console.log(`\n✅ [INIT] Server initialized in ${elapsed}ms`);
     
   } catch (error) {
     console.error('⚠️ [INIT] Initialization error:', error.message);
     // Continue anyway - server can still function, just slower
   }
 }
+
+// Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await closeDatabase();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM, shutting down...');
+  await closeDatabase();
+  process.exit(0);
+});
 
 // Start server
 app.listen(PORT, async () => {
