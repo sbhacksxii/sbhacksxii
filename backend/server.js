@@ -196,8 +196,8 @@ When you have ALL required information (origin, destination, departure date, tri
   "searchParams": {
     "from": "origin city or airport code",
     "to": "destination city or airport code",
-    "departDate": "YYYY-MM-DD format (e.g., 2025-01-15). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY",
-    "returnDate": "YYYY-MM-DD format or null (only if roundtrip). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY",
+    "departDate": "YYYY-MM-DD format (e.g., 2026-01-15). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
+    "returnDate": "YYYY-MM-DD format or null (only if roundtrip). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
     "tripType": "oneway" or "roundtrip",
     "sortBy": "price" or "time"
   }
@@ -206,7 +206,9 @@ When you have ALL required information (origin, destination, departure date, tri
 If the user is NOT asking to search (just having a conversation), respond normally with just: {"response": "your response", "searchParams": null}
 
 CRITICAL: 
-- Dates MUST be in YYYY-MM-DD format (year-month-day). If a user says "1/15/2025" or "10/01/2026", convert it to "2025-01-15" or "2026-10-01" respectively
+- Dates MUST be in YYYY-MM-DD format (year-month-day). If a user says "1/15" or "January 15" without a year, use 2026 as the default year (e.g., "2026-01-15")
+- If a user says "1/15/2025" or "10/01/2026", convert it to "2025-01-15" or "2026-10-01" respectively
+- Default year is 2026 when user doesn't specify a year
 - Never use MM/DD/YYYY format in the JSON response
 - Always ask for missing information - don't guess or assume
 
@@ -280,6 +282,7 @@ Always respond in valid JSON format.`;
           
           try {
             const trimmed = dateStr.trim();
+            const DEFAULT_YEAR = 2026; // Default year when not specified
             
             // Handle MM/DD/YYYY or M/D/YYYY format explicitly (US format)
             const slashFormat = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
@@ -308,6 +311,26 @@ Always respond in valid JSON format.`;
               }
             }
             
+            // Handle MM/DD format (without year) - default to 2026
+            const slashFormatNoYear = /^(\d{1,2})\/(\d{1,2})$/;
+            const matchNoYear = trimmed.match(slashFormatNoYear);
+            if (matchNoYear) {
+              const month = parseInt(matchNoYear[1], 10);
+              const day = parseInt(matchNoYear[2], 10);
+              console.log(`[DATE PARSING] Input: "${trimmed}" -> Month: ${month}, Day: ${day}, Year: ${DEFAULT_YEAR} (default)`);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const date = new Date(DEFAULT_YEAR, month - 1, day);
+                if (!isNaN(date.getTime())) {
+                  const yearStr = date.getFullYear().toString();
+                  const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+                  const dayStr = date.getDate().toString().padStart(2, '0');
+                  const result = `${yearStr}-${monthStr}-${dayStr}`;
+                  console.log(`[DATE PARSING] Result: "${result}"`);
+                  return result;
+                }
+              }
+            }
+            
             // Try parsing as ISO format (YYYY-MM-DD) first - most reliable
             const isoFormat = /^(\d{4})-(\d{2})-(\d{2})$/;
             const isoMatch = trimmed.match(isoFormat);
@@ -320,9 +343,27 @@ Always respond in valid JSON format.`;
               }
             }
             
+            // Handle MM-DD format (without year) - default to 2026
+            const isoFormatNoYear = /^(\d{2})-(\d{2})$/;
+            const isoMatchNoYear = trimmed.match(isoFormatNoYear);
+            if (isoMatchNoYear) {
+              const month = parseInt(isoMatchNoYear[1], 10);
+              const day = parseInt(isoMatchNoYear[2], 10);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const result = `${DEFAULT_YEAR}-${trimmed}`;
+                console.log(`[DATE PARSING] Input: "${trimmed}" -> Result: "${result}" (default year ${DEFAULT_YEAR})`);
+                return result;
+              }
+            }
+            
             // Last resort: Try parsing with Date constructor (unreliable, but better than nothing)
             const date = new Date(trimmed);
             if (!isNaN(date.getTime())) {
+              // If the year is less than 2026, assume it should be 2026
+              const parsedYear = date.getFullYear();
+              if (parsedYear < 2026) {
+                date.setFullYear(2026);
+              }
               return date.toISOString().split('T')[0];
             }
             
