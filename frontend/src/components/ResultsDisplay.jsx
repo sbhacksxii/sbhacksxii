@@ -59,9 +59,10 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
     )
   }
 
-  // Count flights and trains
+  // Count flights, trains, and buses
   const flights = results.filter(r => r.source === 'Google Flights')
   const trains = results.filter(r => r.source === 'Amtrak')
+  const buses = results.filter(r => r.source === 'Greyhound')
 
   const formatPrice = (price, currency = 'USD') => {
     if (!price) return 'N/A'
@@ -101,11 +102,13 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
             <h2 className="text-xl font-semibold text-gray-800">
               {results.length} travel option{results.length !== 1 ? 's' : ''} found
             </h2>
-            {(flights.length > 0 || trains.length > 0) && (
+            {(flights.length > 0 || trains.length > 0 || buses.length > 0) && (
               <p className="text-sm text-gray-500 mt-1">
                 {flights.length > 0 && `${flights.length} flight${flights.length !== 1 ? 's' : ''}`}
-                {flights.length > 0 && trains.length > 0 && ' • '}
+                {flights.length > 0 && (trains.length > 0 || buses.length > 0) && ' • '}
                 {trains.length > 0 && `${trains.length} train${trains.length !== 1 ? 's' : ''}`}
+                {(trains.length > 0 && buses.length > 0) && ' • '}
+                {buses.length > 0 && `${buses.length} bus${buses.length !== 1 ? 'es' : ''}`}
               </p>
             )}
           </div>
@@ -130,13 +133,14 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
           const isTopResult = index === 0
           const isTrain = result.source === 'Amtrak'
           const isFlight = result.source === 'Google Flights'
+          const isBus = result.source === 'Greyhound'
           
           return (
             <div
               key={index}
               className={`bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${
                 isTopResult ? 'ring-2 ring-indigo-500' : ''
-              } ${isTrain ? 'border-l-4 border-blue-500' : ''}`}
+              } ${isTrain ? 'border-l-4 border-blue-500' : ''} ${isBus ? 'border-l-4 border-green-500' : ''}`}
             >
               {isTopResult && (
                 <div className="bg-indigo-500 text-white text-xs font-medium px-3 py-1">
@@ -150,10 +154,10 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                   <div className="flex-1">
                     {/* Provider/Transport Type */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{isTrain ? '🚂' : '✈️'}</span>
+                      <span className="text-2xl">{isTrain ? '🚂' : isBus ? '🚌' : '✈️'}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-gray-800">
-                          {result.provider || (isTrain ? 'Amtrak' : 'Multiple Airlines')}
+                          {result.provider || (isTrain ? 'Amtrak' : isBus ? 'Greyhound' : 'Multiple Airlines')}
                         </span>
                         {isTrain && (
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
@@ -165,6 +169,11 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                             Flight
                           </span>
                         )}
+                        {isBus && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                            Bus
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -173,7 +182,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       {/* Departure */}
                       <div className="text-center">
                         <p className="text-xl font-bold text-gray-900">
-                          {result.departure?.time || (isTrain ? '—' : '--:--')}
+                          {result.departure?.time || (isTrain || isBus ? '—' : '--:--')}
                         </p>
                         <p className="text-sm text-gray-500">
                           {result.departure?.location || 'Origin'}
@@ -182,9 +191,9 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       
                       {/* Path Visual */}
                       <div className="flex-1 flex items-center px-4">
-                        <div className={`flex-1 border-t-2 ${isTrain ? 'border-blue-300 border-solid' : 'border-gray-300 border-dashed'} relative`}>
-                          <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-400' : 'bg-gray-400'} rounded-full`}></div>
-                          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-500' : 'bg-indigo-500'} rounded-full`}></div>
+                        <div className={`flex-1 border-t-2 ${isTrain ? 'border-blue-300 border-solid' : isBus ? 'border-green-300 border-solid' : 'border-gray-300 border-dashed'} relative`}>
+                          <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-400' : isBus ? 'bg-green-400' : 'bg-gray-400'} rounded-full`}></div>
+                          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-500' : isBus ? 'bg-green-500' : 'bg-indigo-500'} rounded-full`}></div>
                           <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-xs text-gray-500 whitespace-nowrap">
                             {result.duration || 'N/A'}
                           </div>
@@ -199,7 +208,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       {/* Arrival */}
                       <div className="text-center">
                         <p className="text-xl font-bold text-gray-900">
-                          {result.arrival?.time || (isTrain ? '—' : '--:--')}
+                          {result.arrival?.time || (isTrain || isBus ? '—' : '--:--')}
                         </p>
                         <p className="text-sm text-gray-500">
                           {result.arrival?.location || 'Destination'}
@@ -223,11 +232,21 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                         )}
                       </p>
                     )}
+                    {isBus && result.busData && result.busData.sampleCount > 1 && (
+                      <p className="text-xs text-green-600 mt-2">
+                        Average of {result.busData.sampleCount} similar buses
+                        {result.busData.priceRange && (
+                          <span className="text-gray-500 ml-1">
+                            (${result.busData.priceRange.min} - ${result.busData.priceRange.max})
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Right: Price */}
                   <div className="ml-6 text-right border-l pl-6 border-gray-200">
-                    <p className={`text-2xl font-bold ${isTrain ? 'text-blue-600' : 'text-indigo-600'}`}>
+                    <p className={`text-2xl font-bold ${isTrain ? 'text-blue-600' : isBus ? 'text-green-600' : 'text-indigo-600'}`}>
                       {formatPrice(result.price, result.currency)}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -255,6 +274,19 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                         Book on Amtrak
+                      </a>
+                    )}
+                    {isBus && (
+                      <a 
+                        href="https://www.greyhound.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Book on Greyhound
                       </a>
                     )}
                   </div>
