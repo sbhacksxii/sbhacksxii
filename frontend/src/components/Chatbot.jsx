@@ -204,14 +204,15 @@ function Chatbot() {
 
   // Send message to backend
   const sendMessageToBackend = async (messageText) => {
-    // Determine API URL - use proxy in dev, full URL in production
+    // Use the same API URL as the search form in App.jsx
+    // In production, use the hardcoded Railway URL; in dev, use proxy
     const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    const apiUrl = isProduction 
-      ? (import.meta.env.VITE_API_URL || 'https://sbhacksxii-production.up.railway.app')
-      : '' // Empty string uses Vite proxy in development
+    const API_URL = isProduction 
+      ? 'https://sbhacksxii-production.up.railway.app'
+      : (import.meta.env.VITE_API_URL || '') // Empty string uses Vite proxy in development
     
-    // Build request URL - handle empty apiUrl for proxy
-    const requestUrl = apiUrl ? `${apiUrl}/api/chat` : '/api/chat'
+    // Build request URL - handle empty API_URL for proxy
+    const requestUrl = API_URL ? `${API_URL}/api/chat` : '/api/chat'
     console.log('Chatbot: Sending request to:', requestUrl)
     
     try {
@@ -251,9 +252,19 @@ function Chatbot() {
       }
 
       // Parse the response as JSON
-      const data = JSON.parse(responseText)
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Chatbot: Failed to parse JSON response:', parseError)
+        throw new Error('Invalid response format from server')
+      }
+      
       console.log('Chatbot: Received data:', data)
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+      
+      // Extract response text - handle both success and error formats
+      const assistantResponse = data.response || data.message || data.error || 'Sorry, I couldn\'t generate a response. Please try again.'
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }])
     } catch (err) {
       console.error('Chatbot error:', err)
       console.error('Chatbot: Request URL was:', requestUrl)
@@ -263,9 +274,9 @@ function Chatbot() {
       let errorMsg = err.message
       
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        errorMsg = `Network error: Unable to connect to the backend server. ${isProduction ? 'Please check if the backend is accessible at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
+        errorMsg = `Network error: Unable to connect to the backend server. ${isProduction ? 'Please check if the backend is accessible at ' + API_URL : 'Please ensure the backend server is running on port 3001.'}`
       } else if (err.message.includes('404')) {
-        errorMsg = `Endpoint not found (404). ${isProduction ? 'The backend URL may be incorrect or the endpoint doesn\'t exist at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
+        errorMsg = `Endpoint not found (404). ${isProduction ? 'The backend URL may be incorrect or the endpoint doesn\'t exist at ' + API_URL : 'Please ensure the backend server is running on port 3001.'}`
       } else if (err.message.includes('500')) {
         errorMsg = `Backend server error (500). Please try again later.`
       } else if (err.message.includes('CORS')) {
