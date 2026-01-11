@@ -1,1 +1,2482 @@
-[]
+[
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 48.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 48.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 AM",
+    "arrivalTime": "05:00 AM",
+    "priceUSD": 48.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 AM",
+    "arrivalTime": "05:00 AM",
+    "priceUSD": 48.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:20 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:20 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:20 AM",
+    "arrivalTime": "06:20 AM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:20 AM",
+    "arrivalTime": "06:20 AM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 47.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "11:05 AM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "06:45 AM",
+    "priceUSD": 47.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "06:45 AM",
+    "priceUSD": 47.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "11:35 AM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "11:35 AM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "06:45 AM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:45 AM",
+    "arrivalTime": "06:45 AM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 AM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 47.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 AM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 AM",
+    "arrivalTime": "07:00 AM",
+    "priceUSD": 47.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 AM",
+    "arrivalTime": "07:00 AM",
+    "priceUSD": 47.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:15 AM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:15 AM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:15 AM",
+    "arrivalTime": "07:15 AM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:15 AM",
+    "arrivalTime": "07:15 AM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:20 AM",
+    "arrivalTime": "11:40 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:20 AM",
+    "arrivalTime": "11:40 AM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:20 AM",
+    "arrivalTime": "07:20 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:20 AM",
+    "arrivalTime": "07:20 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:00 AM",
+    "arrivalTime": "12:20 PM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:00 AM",
+    "arrivalTime": "12:20 PM",
+    "priceUSD": 53.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:00 AM",
+    "arrivalTime": "08:00 AM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:00 AM",
+    "arrivalTime": "08:00 AM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:10 AM",
+    "arrivalTime": "01:25 PM",
+    "priceUSD": 51.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:10 AM",
+    "arrivalTime": "01:25 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:10 AM",
+    "arrivalTime": "08:10 AM",
+    "priceUSD": 51.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:10 AM",
+    "arrivalTime": "08:10 AM",
+    "priceUSD": 51.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:30 AM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:30 AM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:30 AM",
+    "arrivalTime": "08:30 AM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:30 AM",
+    "arrivalTime": "08:30 AM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:45 AM",
+    "arrivalTime": "12:45 PM",
+    "priceUSD": 44.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:45 AM",
+    "arrivalTime": "12:45 PM",
+    "priceUSD": 44.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:45 AM",
+    "arrivalTime": "08:45 AM",
+    "priceUSD": 44.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:45 AM",
+    "arrivalTime": "08:45 AM",
+    "priceUSD": 44.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 AM",
+    "arrivalTime": "01:15 PM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 AM",
+    "arrivalTime": "01:15 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 AM",
+    "arrivalTime": "08:55 AM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 AM",
+    "arrivalTime": "08:55 AM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:00 AM",
+    "arrivalTime": "01:20 PM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:00 AM",
+    "arrivalTime": "01:20 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:00 AM",
+    "arrivalTime": "09:00 AM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:00 AM",
+    "arrivalTime": "09:00 AM",
+    "priceUSD": 50.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:15 AM",
+    "arrivalTime": "01:35 PM",
+    "priceUSD": 48.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:15 AM",
+    "arrivalTime": "01:35 PM",
+    "priceUSD": 48.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:15 AM",
+    "arrivalTime": "09:15 AM",
+    "priceUSD": 48.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:15 AM",
+    "arrivalTime": "09:15 AM",
+    "priceUSD": 48.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:00 AM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 48.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:00 AM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 48.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:00 AM",
+    "arrivalTime": "10:00 AM",
+    "priceUSD": 48.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:00 AM",
+    "arrivalTime": "10:00 AM",
+    "priceUSD": 48.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:15 AM",
+    "arrivalTime": "02:40 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:15 AM",
+    "arrivalTime": "02:40 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:15 AM",
+    "arrivalTime": "10:15 AM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:15 AM",
+    "arrivalTime": "10:15 AM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "03:20 PM",
+    "priceUSD": 50.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "03:20 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "10:30 AM",
+    "priceUSD": 50.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "10:30 AM",
+    "priceUSD": 50.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "04:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "04:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "10:30 AM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "arrivalTime": "10:30 AM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:45 AM",
+    "arrivalTime": "04:25 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2400,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:45 AM",
+    "arrivalTime": "04:25 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:45 AM",
+    "arrivalTime": "10:45 AM",
+    "priceUSD": 54.98,
+    "durationMin": 2400,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "10:45 AM",
+    "arrivalTime": "10:45 AM",
+    "priceUSD": 54.98,
+    "durationMin": 2400,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "03:10 PM",
+    "priceUSD": 46.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "03:10 PM",
+    "priceUSD": 46.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "11:00 AM",
+    "priceUSD": 46.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "11:00 AM",
+    "priceUSD": 46.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "04:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "04:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "11:00 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:00 AM",
+    "arrivalTime": "11:00 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:10 AM",
+    "arrivalTime": "08:00 PM",
+    "priceUSD": 57.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:10 AM",
+    "arrivalTime": "08:00 PM",
+    "priceUSD": 57.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:10 AM",
+    "arrivalTime": "11:10 AM",
+    "priceUSD": 57.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:10 AM",
+    "arrivalTime": "11:10 AM",
+    "priceUSD": 57.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:45 AM",
+    "arrivalTime": "04:10 PM",
+    "priceUSD": 51.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:45 AM",
+    "arrivalTime": "04:10 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:45 AM",
+    "arrivalTime": "11:45 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "11:45 AM",
+    "arrivalTime": "11:45 AM",
+    "priceUSD": 51.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "arrivalTime": "05:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "arrivalTime": "05:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "arrivalTime": "12:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:15 PM",
+    "arrivalTime": "04:40 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:15 PM",
+    "arrivalTime": "04:40 PM",
+    "priceUSD": 57.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:15 PM",
+    "arrivalTime": "12:15 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:15 PM",
+    "arrivalTime": "12:15 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:45 PM",
+    "arrivalTime": "05:20 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:45 PM",
+    "arrivalTime": "05:20 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:45 PM",
+    "arrivalTime": "12:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "12:45 PM",
+    "arrivalTime": "12:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:05 PM",
+    "arrivalTime": "06:50 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:05 PM",
+    "arrivalTime": "06:50 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:05 PM",
+    "arrivalTime": "01:05 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:05 PM",
+    "arrivalTime": "01:05 PM",
+    "priceUSD": 54.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:15 PM",
+    "arrivalTime": "05:45 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:15 PM",
+    "arrivalTime": "05:45 PM",
+    "priceUSD": 56.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:15 PM",
+    "arrivalTime": "01:15 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:15 PM",
+    "arrivalTime": "01:15 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "05:45 PM",
+    "priceUSD": 47.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "05:45 PM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 47.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 47.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "05:50 PM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "05:50 PM",
+    "priceUSD": 53.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 53.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "06:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "06:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 PM",
+    "arrivalTime": "01:30 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:45 PM",
+    "arrivalTime": "06:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:45 PM",
+    "arrivalTime": "06:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:45 PM",
+    "arrivalTime": "01:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:45 PM",
+    "arrivalTime": "01:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:00 PM",
+    "arrivalTime": "07:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:00 PM",
+    "arrivalTime": "07:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:00 PM",
+    "arrivalTime": "02:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:00 PM",
+    "arrivalTime": "02:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "06:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "06:45 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "02:15 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "02:15 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "07:15 PM",
+    "priceUSD": 59.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "07:15 PM",
+    "priceUSD": 59.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "02:15 PM",
+    "priceUSD": 59.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 PM",
+    "arrivalTime": "02:15 PM",
+    "priceUSD": 59.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "07:50 PM",
+    "priceUSD": 56.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "07:50 PM",
+    "priceUSD": 56.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 56.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 56.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "09:25 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "09:25 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:00 PM",
+    "arrivalTime": "03:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:05 PM",
+    "arrivalTime": "07:40 PM",
+    "priceUSD": 66.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:05 PM",
+    "arrivalTime": "07:40 PM",
+    "priceUSD": 66.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:05 PM",
+    "arrivalTime": "03:05 PM",
+    "priceUSD": 66.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "03:05 PM",
+    "arrivalTime": "03:05 PM",
+    "priceUSD": 66.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:00 PM",
+    "arrivalTime": "09:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:00 PM",
+    "arrivalTime": "09:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:00 PM",
+    "arrivalTime": "04:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:00 PM",
+    "arrivalTime": "04:00 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "08:25 PM",
+    "priceUSD": 47.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "08:25 PM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "04:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "04:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "08:50 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "08:50 PM",
+    "priceUSD": 47.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "04:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:15 PM",
+    "arrivalTime": "04:15 PM",
+    "priceUSD": 47.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:45 PM",
+    "arrivalTime": "09:30 PM",
+    "priceUSD": 53.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:45 PM",
+    "arrivalTime": "09:30 PM",
+    "priceUSD": 53.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:45 PM",
+    "arrivalTime": "04:45 PM",
+    "priceUSD": 53.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "04:45 PM",
+    "arrivalTime": "04:45 PM",
+    "priceUSD": 53.98,
+    "durationMin": 2700,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 PM",
+    "arrivalTime": "09:20 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 PM",
+    "arrivalTime": "09:20 PM",
+    "priceUSD": 54.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 PM",
+    "arrivalTime": "05:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:00 PM",
+    "arrivalTime": "05:00 PM",
+    "priceUSD": 54.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "10:55 PM",
+    "priceUSD": 57.97,
+    "durationMin": 2400,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "10:55 PM",
+    "priceUSD": 57.97,
+    "durationMin": null,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "05:15 PM",
+    "priceUSD": 57.97,
+    "durationMin": 2400,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "05:15 PM",
+    "priceUSD": 57.97,
+    "durationMin": 2400,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "12:50 AM",
+    "priceUSD": 57.47,
+    "durationMin": 2100,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "12:50 AM",
+    "priceUSD": 57.47,
+    "durationMin": null,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "05:15 PM",
+    "priceUSD": 57.47,
+    "durationMin": 2100,
+    "transfers": 1
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:15 PM",
+    "arrivalTime": "05:15 PM",
+    "priceUSD": 57.47,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:30 PM",
+    "arrivalTime": "09:50 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:30 PM",
+    "arrivalTime": "09:50 PM",
+    "priceUSD": 57.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:30 PM",
+    "arrivalTime": "05:30 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "05:30 PM",
+    "arrivalTime": "05:30 PM",
+    "priceUSD": 57.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:15 PM",
+    "arrivalTime": "10:30 PM",
+    "priceUSD": 56.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:15 PM",
+    "arrivalTime": "10:30 PM",
+    "priceUSD": 56.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:15 PM",
+    "arrivalTime": "06:15 PM",
+    "priceUSD": 56.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:15 PM",
+    "arrivalTime": "06:15 PM",
+    "priceUSD": 56.98,
+    "durationMin": 900,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "10:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "10:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "10:50 PM",
+    "priceUSD": 46.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "10:50 PM",
+    "priceUSD": 46.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 46.98,
+    "durationMin": 1200,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "11:30 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "11:30 PM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "06:30 PM",
+    "arrivalTime": "06:30 PM",
+    "priceUSD": 50.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 PM",
+    "arrivalTime": "11:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 PM",
+    "arrivalTime": "11:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 PM",
+    "arrivalTime": "07:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:00 PM",
+    "arrivalTime": "07:00 PM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:25 PM",
+    "arrivalTime": "11:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:25 PM",
+    "arrivalTime": "11:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:25 PM",
+    "arrivalTime": "07:25 PM",
+    "priceUSD": 51.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:25 PM",
+    "arrivalTime": "07:25 PM",
+    "priceUSD": 51.98,
+    "durationMin": 600,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:30 PM",
+    "arrivalTime": "11:55 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:30 PM",
+    "arrivalTime": "11:55 PM",
+    "priceUSD": 56.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:30 PM",
+    "arrivalTime": "07:30 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:30 PM",
+    "arrivalTime": "07:30 PM",
+    "priceUSD": 56.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:35 PM",
+    "arrivalTime": "12:10 AM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:35 PM",
+    "arrivalTime": "12:10 AM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:35 PM",
+    "arrivalTime": "07:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "07:35 PM",
+    "arrivalTime": "07:35 PM",
+    "priceUSD": 51.98,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 PM",
+    "arrivalTime": "01:00 AM",
+    "priceUSD": 51.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 PM",
+    "arrivalTime": "01:00 AM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 PM",
+    "arrivalTime": "08:55 PM",
+    "priceUSD": 51.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "08:55 PM",
+    "arrivalTime": "08:55 PM",
+    "priceUSD": 51.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:30 PM",
+    "arrivalTime": "02:20 AM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:30 PM",
+    "arrivalTime": "02:20 AM",
+    "priceUSD": 51.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:30 PM",
+    "arrivalTime": "09:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:30 PM",
+    "arrivalTime": "09:30 PM",
+    "priceUSD": 51.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:50 PM",
+    "arrivalTime": "02:15 AM",
+    "priceUSD": 59.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:50 PM",
+    "arrivalTime": "02:15 AM",
+    "priceUSD": 59.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:50 PM",
+    "arrivalTime": "09:50 PM",
+    "priceUSD": 59.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "09:50 PM",
+    "arrivalTime": "09:50 PM",
+    "priceUSD": 59.98,
+    "durationMin": 1500,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:00 AM",
+    "arrivalTime": "05:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:00 AM",
+    "arrivalTime": "05:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:00 AM",
+    "arrivalTime": "01:00 AM",
+    "priceUSD": 41.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:00 AM",
+    "arrivalTime": "01:00 AM",
+    "priceUSD": 41.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "05:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "05:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 41.98,
+    "durationMin": 0,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "05:35 AM",
+    "priceUSD": 50.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "05:35 AM",
+    "priceUSD": 50.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 50.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 50.98,
+    "durationMin": 300,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "06:00 AM",
+    "priceUSD": 43.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "06:00 AM",
+    "priceUSD": 43.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 43.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "01:30 AM",
+    "arrivalTime": "01:30 AM",
+    "priceUSD": 43.98,
+    "durationMin": 1800,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 AM",
+    "arrivalTime": "07:05 AM",
+    "priceUSD": 44.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 AM",
+    "arrivalTime": "07:05 AM",
+    "priceUSD": 44.98,
+    "durationMin": null,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 AM",
+    "arrivalTime": "02:15 AM",
+    "priceUSD": 44.98,
+    "durationMin": 3000,
+    "transfers": 0
+  },
+  {
+    "origin": "LOS ANGELES",
+    "dest": "SAN FRANCISCO",
+    "date": "2026-02-15",
+    "departureTime": "02:15 AM",
+    "arrivalTime": "02:15 AM",
+    "priceUSD": 44.98,
+    "durationMin": 3000,
+    "transfers": 0
+  }
+]
