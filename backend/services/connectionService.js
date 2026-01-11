@@ -662,7 +662,8 @@ function buildConnectionItinerary(leg1, leg2, hubCity, connectionType, departDat
         priceFormatted: leg1.price ? `$${leg1.price.toFixed(2)}` : null,
         provider: leg1.provider,
         stops: leg1.stops,
-        source: leg1.source
+        source: leg1.source,
+        fullUrl: leg1.fullUrl || null
       },
       {
         legType: leg2Type,
@@ -680,7 +681,8 @@ function buildConnectionItinerary(leg1, leg2, hubCity, connectionType, departDat
         priceFormatted: leg2.price ? `$${leg2.price.toFixed(2)}` : null,
         provider: leg2.provider,
         stops: leg2.stops,
-        source: leg2.source
+        source: leg2.source,
+        fullUrl: leg2.fullUrl || null
       }
     ],
     transfer: {
@@ -1057,7 +1059,8 @@ function buildFlightConnectionItinerary(leg1, leg2, hubCity, departDate, returnD
         priceFormatted: leg1.price ? `$${leg1.price.toFixed(2)}` : null,
         provider: leg1.provider,
         stops: leg1.stops,
-        source: leg1.source || 'Google Flights'
+        source: leg1.source || 'Google Flights',
+        fullUrl: leg1.fullUrl || null
       },
       {
         legType: 'flight',
@@ -1075,7 +1078,8 @@ function buildFlightConnectionItinerary(leg1, leg2, hubCity, departDate, returnD
         priceFormatted: leg2.price ? `$${leg2.price.toFixed(2)}` : null,
         provider: leg2.provider,
         stops: leg2.stops,
-        source: leg2.source || 'Google Flights'
+        source: leg2.source || 'Google Flights',
+        fullUrl: leg2.fullUrl || null
       }
     ],
     transfer: {
