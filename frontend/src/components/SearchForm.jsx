@@ -274,8 +274,20 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   const swapLocations = () => {
     const newFrom = endLocation
     const newTo = startLocation
-    updateStartLocation(newFrom)
-    updateEndLocation(newTo)
+    
+    // Update both values together
+    // If using controlled components, update both at once via onFormValuesChange
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ 
+        ...formValues, 
+        from: newFrom,
+        to: newTo
+      })
+    } else {
+      // If using internal state, update both states
+      setInternalStartLocation(newFrom)
+      setInternalEndLocation(newTo)
+    }
   }
 
   // Get today's date in YYYY-MM-DD format for min date
