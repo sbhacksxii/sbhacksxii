@@ -228,13 +228,16 @@ function Chatbot() {
 
       console.log('Chatbot: Response status:', response.status)
 
+      // Read response body once
+      const responseText = await response.text()
+      console.log('Chatbot: Response body:', responseText)
+
       if (!response.ok) {
         let errorData
         try {
-          errorData = await response.json()
+          errorData = JSON.parse(responseText)
         } catch {
-          const errorText = await response.text()
-          errorData = { error: errorText || `HTTP ${response.status}` }
+          errorData = { error: responseText || `HTTP ${response.status}` }
         }
         console.error('Chatbot: Error response:', errorData)
         
@@ -247,7 +250,8 @@ function Chatbot() {
         throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      // Parse the response as JSON
+      const data = JSON.parse(responseText)
       console.log('Chatbot: Received data:', data)
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
     } catch (err) {
