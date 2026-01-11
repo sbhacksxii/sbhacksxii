@@ -265,6 +265,177 @@ async function getAvailableRoutes() {
 }
 
 /**
+ * Gets all fares for a route (for all dates).
+ * 
+ * @param {string} origin - Origin station code
+ * @param {string} dest - Destination station code
+ * @returns {Promise<Array>} Array of all fare objects for this route
+ */
+async function getAllFaresForRoute(origin, dest) {
+  const normalizedOrigin = normalizeCode(origin);
+  const normalizedDest = normalizeCode(dest);
+  const fares = await loadFaresData();
+  
+  return fares.filter(
+    fare => normalizeCode(fare.origin) === normalizedOrigin &&
+            normalizeCode(fare.dest) === normalizedDest
+  );
+}
+
+/**
+ * Finds a station code by city name (fuzzy matching).
+ * 
+ * @param {string} cityName - City name to search for
+ * @returns {Promise<string|null>} Station code or null if not found
+ */
+async function findStationCodeByCity(cityName) {
+  if (!cityName) return null;
+  
+  const stations = await loadStationsData();
+  const searchName = cityName.toLowerCase().trim();
+  
+  // Try exact match first
+  let station = stations.find(s => 
+    s.city.toLowerCase() === searchName ||
+    s.name.toLowerCase().includes(searchName)
+  );
+  
+  if (station) return station.code;
+  
+  // Try partial match
+  station = stations.find(s => 
+    s.city.toLowerCase().includes(searchName) ||
+    searchName.includes(s.city.toLowerCase())
+  );
+  
+  if (station) return station.code;
+  
+  // Try matching common city name patterns
+  const cityWords = searchName.split(/\s+/);
+  for (const word of cityWords) {
+    if (word.length < 3) continue;
+    station = stations.find(s => 
+      s.city.toLowerCase().includes(word) ||
+      s.name.toLowerCase().includes(word)
+    );
+    if (station) return station.code;
+  }
+  
+  return null;
+}
+
+/**
+ * Groups similar trains and averages their prices.
+ * Similar trains are those with the same origin, dest, transfers, and similar duration.
+ * 
+ * @param {Array} fares - Array of fare objects
+ * @param {number} maxResults - Maximum number of grouped results to return (default: 5)
+ * @param {number} durationTolerance - Tolerance for duration grouping in minutes (default: 30)
+ * @returns {Array} Array of grouped and averaged fare objects
+ */
+function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
+  if (!fares || fares.length === 0) return [];
+  
+  // Group by origin, dest, transfers, and similar duration
+  const groups = new Map();
+  
+  for (const fare of fares) {
+    // Create a key based on route and characteristics
+    const durationBucket = Math.floor(fare.durationMin / durationTolerance) * durationTolerance;
+    const key = `${fare.origin}-${fare.dest}-${fare.transfers}-${durationBucket}`;
+    
+    if (!groups.has(key)) {
+      groups.set(key, {
+        origin: fare.origin,
+        dest: fare.dest,
+        transfers: fare.transfers,
+        durationMin: fare.durationMin,
+        prices: [],
+        dates: []
+      });
+    }
+    
+    const group = groups.get(key);
+    group.prices.push(fare.priceUSD);
+    group.dates.push(fare.date);
+    // Update duration to average (or keep representative)
+    group.durationMin = fare.durationMin;
+  }
+  
+  // Convert groups to averaged results
+  const results = Array.from(groups.values()).map(group => {
+    const avgPrice = group.prices.reduce((sum, price) => sum + price, 0) / group.prices.length;
+    const minPrice = Math.min(...group.prices);
+    const maxPrice = Math.max(...group.prices);
+    
+    return {
+      origin: group.origin,
+      dest: group.dest,
+      transfers: group.transfers,
+      durationMin: group.durationMin,
+      priceUSD: Math.round(avgPrice * 100) / 100, // Round to 2 decimal places
+      minPriceUSD: minPrice,
+      maxPriceUSD: maxPrice,
+      sampleCount: group.prices.length,
+      dates: group.dates
+    };
+  });
+  
+  // Sort by average price and return top results
+  results.sort((a, b) => a.priceUSD - b.priceUSD);
+  return results.slice(0, maxResults);
+}
+
+/**
+ * Gets grouped and averaged train results for a route.
+ * 
+ * @param {string} origin - Origin station code or city name
+ * @param {string} dest - Destination station code or city name
+ * @param {number} maxResults - Maximum number of results to return
+ * @returns {Promise<Array>} Array of grouped and averaged train results
+ */
+async function getGroupedTrainResults(origin, dest, maxResults = 5) {
+  // Normalize input first
+  const normalizedOrigin = normalizeCode(origin);
+  const normalizedDest = normalizeCode(dest);
+  
+  // Try to find station codes (handles both codes and city names)
+  let originCode = normalizedOrigin;
+  let destCode = normalizedDest;
+  
+  // If it doesn't look like a station code (more than 4 chars), try city lookup
+  if (originCode.length > 4) {
+    const foundCode = await findStationCodeByCity(origin);
+    if (foundCode) {
+      originCode = foundCode;
+    } else {
+      // If city lookup fails, return empty array
+      return [];
+    }
+  }
+  
+  if (destCode.length > 4) {
+    const foundCode = await findStationCodeByCity(dest);
+    if (foundCode) {
+      destCode = foundCode;
+    } else {
+      // If city lookup fails, return empty array
+      return [];
+    }
+  }
+  
+  // Get all fares for this route
+  const fares = await getAllFaresForRoute(originCode, destCode);
+  
+  if (fares.length === 0) {
+    return [];
+  }
+  
+  // Group and average similar trains
+  return groupAndAverageTrains(fares, maxResults);
+}
+
+/**
  * Clears the in-memory cache (useful for testing or refreshing data).
  */
 function clearCache() {
@@ -282,6 +453,10 @@ export {
   getStations,
   getStationByCode,
   getAvailableRoutes,
+  getAllFaresForRoute,
+  findStationCodeByCity,
+  getGroupedTrainResults,
+  groupAndAverageTrains,
   clearCache,
   // Export for testing
   loadFaresData,

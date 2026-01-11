@@ -7,7 +7,8 @@ import {
   getAmtrakFare, 
   getStations, 
   getStationByCode,
-  getAvailableRoutes 
+  getAvailableRoutes,
+  getGroupedTrainResults
 } from './services/amtrakService.js';
 
 dotenv.config();
@@ -86,6 +87,71 @@ async function checkDatabase(searchParams) {
 }
 
 /**
+ * Helper function to format minutes to readable duration string
+ * @param {number} minutes - Duration in minutes
+ * @returns {string} Formatted duration (e.g., "2 hr 30 min")
+ */
+function formatDuration(minutes) {
+  if (!minutes) return 'N/A';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours} hr`;
+  return `${hours} hr ${mins} min`;
+}
+
+/**
+ * Format train results to match flight result structure
+ * @param {Array} trainResults - Array of grouped train results
+ * @param {string} from - Origin city name
+ * @param {string} to - Destination city name
+ * @param {string} departDate - Departure date
+ * @param {string|null} returnDate - Return date (if roundtrip)
+ * @returns {Array} Formatted train results
+ */
+function formatTrainResults(trainResults, from, to, departDate, returnDate) {
+  return trainResults.map(train => {
+    const stopsText = train.transfers === 0 ? 'Nonstop' : `${train.transfers} transfer${train.transfers > 1 ? 's' : ''}`;
+    const priceFormatted = `$${train.priceUSD.toFixed(2)}`;
+    
+    return {
+      type: returnDate ? 'roundtrip' : 'oneway',
+      departure: {
+        location: from,
+        time: null // Train data doesn't have specific times
+      },
+      arrival: {
+        location: to,
+        time: null // Train data doesn't have specific times
+      },
+      duration: formatDuration(train.durationMin),
+      departDate: departDate,
+      returnDate: returnDate || null,
+      durationMinutes: train.durationMin,
+      price: train.priceUSD,
+      priceFormatted: priceFormatted,
+      currency: 'USD',
+      provider: 'Amtrak',
+      stops: stopsText,
+      bags: null,
+      source: 'Amtrak',
+      rawSummary: `Amtrak train from ${train.origin} to ${train.dest}, ${stopsText}, average price: ${priceFormatted}`,
+      // Additional train-specific fields
+      trainData: {
+        origin: train.origin,
+        dest: train.dest,
+        transfers: train.transfers,
+        sampleCount: train.sampleCount,
+        priceRange: {
+          min: train.minPriceUSD,
+          max: train.maxPriceUSD
+        }
+      }
+    };
+  });
+}
+
+/**
  * Search API endpoint
  * POST /api/search
  */
@@ -113,12 +179,12 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 1: Check database first (placeholder)
-    let results = await checkDatabase({ from, to, departDate, returnDate, tripType});
+    let flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
     // Step 2: If no database results, use web scraper
-    if (!results) {
+    if (!flightResults) {
       console.log('🌐 [SCRAPER] Starting web scraper...');
-      results = await scrapeGoogleFlights(
+      flightResults = await scrapeGoogleFlights(
         from,
         to,
         departDate,
@@ -129,23 +195,49 @@ app.post('/api/search', async (req, res) => {
       // await db.flights.insertMany(results.map(r => ({ ...r, scrapedAt: new Date() })));
     }
 
-    // Step 3: Sort results
-    if (results && results.length > 0) {
+    // Step 3: Fetch train data in parallel
+    let trainResults = [];
+    try {
+      console.log('🚂 [TRAINS] Fetching train data...');
+      const rawTrainResults = await getGroupedTrainResults(from, to, 5); // Get top 5 grouped trains
+      
+      if (rawTrainResults && rawTrainResults.length > 0) {
+        trainResults = formatTrainResults(rawTrainResults, from, to, departDate, returnDate);
+        console.log(`✅ [TRAINS] Found ${trainResults.length} train options`);
+      } else {
+        console.log('ℹ️ [TRAINS] No train routes found for this route');
+      }
+    } catch (trainError) {
+      console.error('⚠️ [TRAINS] Error fetching train data:', trainError.message);
+      // Continue without train data - don't fail the entire request
+    }
+
+    // Step 4: Combine flight and train results
+    const allResults = [];
+    if (flightResults && flightResults.length > 0) {
+      allResults.push(...flightResults);
+    }
+    if (trainResults && trainResults.length > 0) {
+      allResults.push(...trainResults);
+    }
+
+    // Step 5: Sort all results together
+    if (allResults.length > 0) {
       if (sortBy === 'price') {
-        results.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+        allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
       } else if (sortBy === 'time') {
-        results.sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity));
+        allResults.sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity));
       }
     }
 
-    console.log(`\n✅ Returning ${results?.length || 0} results\n`);
+    console.log(`\n✅ Returning ${allResults.length} total results (${flightResults?.length || 0} flights, ${trainResults.length} trains)\n`);
     
-    res.json(results || []);
+    res.json(allResults || []);
     
   } catch (error) {
     console.error('❌ Search error:', error);
     res.status(500).json({
-      error: 'Failed to search for flights',
+      error: 'Failed to search for travel options',
       message: error.message
     });
   }
