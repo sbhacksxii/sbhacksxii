@@ -229,9 +229,22 @@ function Chatbot() {
       console.log('Chatbot: Response status:', response.status)
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Chatbot: Error response:', errorText)
-        throw new Error(`Failed to get chatbot response: ${response.status}`)
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          const errorText = await response.text()
+          errorData = { error: errorText || `HTTP ${response.status}` }
+        }
+        console.error('Chatbot: Error response:', errorData)
+        
+        // If backend returned an error response, use it
+        if (errorData.response) {
+          setMessages(prev => [...prev, { role: 'assistant', content: errorData.response }])
+          return
+        }
+        
+        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
@@ -240,9 +253,21 @@ function Chatbot() {
     } catch (err) {
       console.error('Chatbot error:', err)
       console.error('Chatbot: Request URL was:', requestUrl)
-      const errorMsg = err.message.includes('404') 
-        ? `Connection error (404): The backend server is not reachable. ${isProduction ? 'Please verify the backend is deployed at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
-        : err.message
+      console.error('Chatbot: Full error:', err)
+      
+      // Handle different types of errors
+      let errorMsg = err.message
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMsg = `Network error: Unable to connect to the backend server. ${isProduction ? 'Please check if the backend is accessible at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
+      } else if (err.message.includes('404')) {
+        errorMsg = `Endpoint not found (404). ${isProduction ? 'The backend URL may be incorrect or the endpoint doesn\'t exist at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
+      } else if (err.message.includes('500')) {
+        errorMsg = `Backend server error (500). Please try again later.`
+      } else if (err.message.includes('CORS')) {
+        errorMsg = `CORS error: The backend server is blocking requests from this origin.`
+      }
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: `Sorry, I encountered an error: ${errorMsg}. Please try again later.`
