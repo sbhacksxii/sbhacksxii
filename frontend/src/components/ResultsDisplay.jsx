@@ -59,9 +59,10 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
     )
   }
 
-  // Count flights and trains
+  // Count flights, trains, and connections
   const flights = results.filter(r => r.source === 'Google Flights')
   const trains = results.filter(r => r.source === 'Amtrak')
+  const connections = results.filter(r => r.type === 'connection' || r.source === 'Connection')
 
   const formatPrice = (price, currency = 'USD') => {
     if (!price) return 'N/A'
@@ -101,11 +102,13 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
             <h2 className="text-xl font-semibold text-gray-800">
               {results.length} travel option{results.length !== 1 ? 's' : ''} found
             </h2>
-            {(flights.length > 0 || trains.length > 0) && (
+            {(flights.length > 0 || trains.length > 0 || connections.length > 0) && (
               <p className="text-sm text-gray-500 mt-1">
                 {flights.length > 0 && `${flights.length} flight${flights.length !== 1 ? 's' : ''}`}
-                {flights.length > 0 && trains.length > 0 && ' • '}
+                {flights.length > 0 && (trains.length > 0 || connections.length > 0) && ' • '}
                 {trains.length > 0 && `${trains.length} bus/train route${trains.length !== 1 ? 's' : ''}`}
+                {trains.length > 0 && connections.length > 0 && ' • '}
+                {connections.length > 0 && `${connections.length} connection${connections.length !== 1 ? 's' : ''}`}
               </p>
             )}
           </div>
@@ -130,7 +133,132 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
           const isTopResult = index === 0
           const isTrain = result.source === 'Amtrak'
           const isFlight = result.source === 'Google Flights'
+          const isConnection = result.type === 'connection' || result.source === 'Connection'
           
+          // Render connection differently
+          if (isConnection) {
+            return (
+              <div
+                key={index}
+                className={`bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${
+                  isTopResult ? 'ring-2 ring-indigo-500' : ''
+                } border-l-4 border-purple-500`}
+              >
+                {isTopResult && (
+                  <div className="bg-indigo-500 text-white text-xs font-medium px-3 py-1">
+                    {sortBy === 'price' ? '💰 Best Price' : '⚡ Fastest'}
+                  </div>
+                )}
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    {/* Left: Travel Info */}
+                    <div className="flex-1">
+                      {/* Provider/Transport Type */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl">🔗</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-800">
+                            {result.provider || 'Connection'}
+                          </span>
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">
+                            Connection
+                          </span>
+                          {result.legs && result.legs.length > 0 && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              {result.legs.length} leg{result.legs.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Connection Route with Multiple Legs */}
+                      <div className="space-y-2">
+                        {result.legs && result.legs.map((leg, legIndex) => {
+                          const isLegTrain = leg.source === 'Amtrak'
+                          const isLegFlight = leg.source === 'Google Flights'
+                          
+                          return (
+                            <div key={legIndex} className="flex items-center gap-4">
+                              {/* Departure */}
+                              <div className="text-center min-w-[80px]">
+                                <p className="text-lg font-bold text-gray-900">
+                                  {leg.departure?.time || '--:--'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {leg.departure?.location || 'Origin'}
+                                </p>
+                              </div>
+                              
+                              {/* Path Visual */}
+                              <div className="flex-1 flex items-center px-4">
+                                <div className={`flex-1 border-t-2 ${isLegTrain ? 'border-blue-300 border-solid' : 'border-gray-300 border-dashed'} relative`}>
+                                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isLegTrain ? 'bg-blue-400' : 'bg-gray-400'} rounded-full`}></div>
+                                  <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isLegTrain ? 'bg-blue-500' : 'bg-indigo-500'} rounded-full`}></div>
+                                  <div className="absolute left-1/2 -translate-x-1/2 -top-6 text-xs text-gray-500 whitespace-nowrap">
+                                    {leg.duration || 'N/A'}
+                                  </div>
+                                  <div className="absolute left-1/2 -translate-x-1/2 top-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                    {isLegTrain ? '🚂 Train' : '✈️ Flight'}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Arrival */}
+                              <div className="text-center min-w-[80px]">
+                                <p className="text-lg font-bold text-gray-900">
+                                  {leg.arrival?.time || '--:--'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {leg.arrival?.location || 'Destination'}
+                                </p>
+                              </div>
+                              
+                              {/* Hub/Transfer Info */}
+                              {legIndex < result.legs.length - 1 && result.hubs && result.hubs[legIndex] && (
+                                <div className="ml-2 px-3 py-1 bg-purple-50 border border-purple-200 rounded-md">
+                                  <p className="text-xs font-medium text-purple-700">
+                                    Transfer: {result.hubs[legIndex].city}
+                                  </p>
+                                  <p className="text-xs text-purple-600">
+                                    Wait: {Math.floor((result.hubs[legIndex].waitTimeMinutes || 0) / 60)}h {(result.hubs[legIndex].waitTimeMinutes || 0) % 60}m
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      
+                      {/* Total Duration */}
+                      <div className="mt-3 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-600">
+                          Total Duration: <span className="font-semibold">{result.duration || 'N/A'}</span>
+                          {result.hubs && result.hubs.length > 0 && (
+                            <span className="ml-2">
+                              • {result.hubs.length} transfer{result.hubs.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Right: Price */}
+                    <div className="ml-6 text-right border-l pl-6 border-gray-200">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {formatPrice(result.price, result.currency)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {result.priceFormatted ? 'total' : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+          
+          // Regular flight/train display
           return (
             <div
               key={index}

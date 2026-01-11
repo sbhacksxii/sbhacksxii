@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@deepgram/sdk": "^3.13.0",
     "axios": "^1.6.0",
-    "@deepgram/sdk": "^3.4.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -24,4 +24,3 @@
     "vite": "^5.0.8"
   }
 }
-

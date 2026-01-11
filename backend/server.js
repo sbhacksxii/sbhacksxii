@@ -11,6 +11,7 @@ import {
   getAvailableRoutes,
   getGroupedTrainResults
 } from './services/amtrakService.js';
+import { buildConnections } from './services/connectionService.js';
 
 dotenv.config();
 
@@ -256,7 +257,20 @@ app.post('/api/search', async (req, res) => {
       // Continue without train data - don't fail the entire request
     }
 
-    // Step 4: Combine flight and train results
+    // Step 4: Build connections (flight + train combinations)
+    let connectionResults = [];
+    if (flightResults && flightResults.length > 0 && trainResults && trainResults.length > 0) {
+      try {
+        console.log('🔗 [CONNECTIONS] Building train + flight connections...');
+        connectionResults = await buildConnections(flightResults, trainResults, from, to, departDate, returnDate);
+        console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
+      } catch (connectionError) {
+        console.error('⚠️ [CONNECTIONS] Error building connections:', connectionError.message);
+        // Continue without connections - don't fail the entire request
+      }
+    }
+
+    // Step 5: Combine flight, train, and connection results
     const allResults = [];
     if (flightResults && flightResults.length > 0) {
       allResults.push(...flightResults);
@@ -264,8 +278,11 @@ app.post('/api/search', async (req, res) => {
     if (trainResults && trainResults.length > 0) {
       allResults.push(...trainResults);
     }
+    if (connectionResults && connectionResults.length > 0) {
+      allResults.push(...connectionResults);
+    }
 
-    // Step 5: Sort all results together
+    // Step 6: Sort all results together
     if (allResults.length > 0) {
       if (sortBy === 'price') {
         allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
@@ -274,7 +291,7 @@ app.post('/api/search', async (req, res) => {
       }
     }
 
-    console.log(`\n✅ Returning ${allResults.length} total results (${flightResults?.length || 0} flights, ${trainResults.length} trains)\n`);
+    console.log(`\n✅ Returning ${allResults.length} total results (${flightResults?.length || 0} flights, ${trainResults.length} trains, ${connectionResults.length} connections)\n`);
     
     res.json(allResults || []);
     
