@@ -14,6 +14,7 @@ function Chatbot({ onFormUpdate }) {
   const [currentTranscript, setCurrentTranscript] = useState('')
   const [isFinalTranscript, setIsFinalTranscript] = useState(false)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const socketRef = useRef(null)
   const streamRef = useRef(null)
@@ -24,7 +25,10 @@ function Chatbot({ onFormUpdate }) {
   const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || ''
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Scroll only within the chat container, not the entire page
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   useEffect(() => {
@@ -331,7 +335,7 @@ function Chatbot({ onFormUpdate }) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div
             key={index}
