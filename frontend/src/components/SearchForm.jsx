@@ -11,6 +11,9 @@ const LOCATIONS = [
   { code: 'PDX', name: 'Portland Airport & Union Station', city: 'Portland', state: 'OR', type: 'both' },
   { code: 'BOS', name: 'Boston Logan Airport & South Station', city: 'Boston', state: 'MA', type: 'both' },
   { code: 'PHL', name: 'Philadelphia Airport & 30th Street Station', city: 'Philadelphia', state: 'PA', type: 'both' },
+  { code: 'SBA', name: 'Santa Barbara Airport & Station', city: 'Santa Barbara', state: 'CA', type: 'both' },
+  { code: 'ABQ', name: 'Albuquerque Airport & Station', city: 'Albuquerque', state: 'NM', type: 'both' },
+  { code: 'OMA', name: 'Omaha Airport & Station', city: 'Omaha', state: 'NE', type: 'both' },
   
   // Airports Only
   { code: 'SFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', type: 'airport' },
@@ -36,15 +39,12 @@ const LOCATIONS = [
   { code: 'CLT', name: 'Charlotte Douglas International Airport', city: 'Charlotte', state: 'NC', type: 'airport' },
   
   // Amtrak Stations Only
-  { code: 'SBA', name: 'Santa Barbara Station', city: 'Santa Barbara', state: 'CA', type: 'station' },
   { code: 'SAC', name: 'Sacramento Valley Station', city: 'Sacramento', state: 'CA', type: 'station' },
   { code: 'SFC', name: 'San Francisco / Emeryville Station', city: 'San Francisco Bay Area', state: 'CA', type: 'station' },
   { code: 'CHI', name: 'Chicago Union Station', city: 'Chicago', state: 'IL', type: 'station' },
   { code: 'NYP', name: 'New York Penn Station', city: 'New York', state: 'NY', type: 'station' },
   { code: 'WAS', name: 'Washington Union Station', city: 'Washington', state: 'DC', type: 'station' },
-  { code: 'ABQ', name: 'Albuquerque Station', city: 'Albuquerque', state: 'NM', type: 'station' },
   { code: 'NOL', name: 'New Orleans Union Passenger Terminal', city: 'New Orleans', state: 'LA', type: 'station' },
-  { code: 'OMA', name: 'Omaha Station', city: 'Omaha', state: 'NE', type: 'station' },
   { code: 'KYC', name: 'Kansas City Union Station', city: 'Kansas City', state: 'MO', type: 'station' },
   { code: 'SPK', name: 'Spokane Station', city: 'Spokane', state: 'WA', type: 'station' },
 ]
@@ -270,6 +270,14 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
     }
   }
 
+  // Swap from and to locations
+  const swapLocations = () => {
+    const newFrom = endLocation
+    const newTo = startLocation
+    updateStartLocation(newFrom)
+    updateEndLocation(newTo)
+  }
+
   // Get today's date in YYYY-MM-DD format for min date
   const today = new Date().toISOString().split('T')[0]
 
@@ -319,7 +327,7 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
         </div>
 
         {/* From / To Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end">
           <div>
             <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
               From
@@ -332,6 +340,32 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
               locations={LOCATIONS}
               required
             />
+          </div>
+
+          {/* Swap Button */}
+          <div className="flex items-center justify-center pb-0 md:pb-0">
+            <button
+              type="button"
+              onClick={swapLocations}
+              className="p-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+              title="Swap origin and destination"
+              aria-label="Swap origin and destination"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 text-gray-600" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" 
+                />
+              </svg>
+            </button>
           </div>
 
           <div>
