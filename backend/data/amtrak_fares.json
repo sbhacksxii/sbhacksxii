@@ -328,6 +328,76 @@
     "priceUSD": 49,
     "durationMin": 181,
     "transfers": 1
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "6:48 AM",
+    "priceUSD": 74,
+    "durationMin": 684,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "5:03 PM",
+    "priceUSD": 61,
+    "durationMin": 807,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "6:53 PM",
+    "priceUSD": 61,
+    "durationMin": 697,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "6:48 AM",
+    "priceUSD": 73,
+    "durationMin": 719,
+    "transfers": 2
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "6:55 AM",
+    "priceUSD": 138,
+    "durationMin": 712,
+    "transfers": 2
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "10:30 AM",
+    "priceUSD": 89,
+    "durationMin": 585,
+    "transfers": 2
+  },
+
+  {
+    "origin": "SAC",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "10:45 AM",
+    "priceUSD": 89,
+    "durationMin": 570,
+    "transfers": 2
   }
 
 ]
