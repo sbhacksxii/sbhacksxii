@@ -53,11 +53,15 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
         <div className="text-4xl mb-4">🔍</div>
-        <p className="font-medium">No flights found</p>
+        <p className="font-medium">No travel options found</p>
         <p className="text-sm mt-2">Try different dates or destinations</p>
       </div>
     )
   }
+
+  // Count flights and trains
+  const flights = results.filter(r => r.source === 'Google Flights')
+  const trains = results.filter(r => r.source === 'Amtrak')
 
   const formatPrice = (price, currency = 'USD') => {
     if (!price) return 'N/A'
@@ -93,9 +97,18 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
       {/* Results Header */}
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {results.length} flight{results.length !== 1 ? 's' : ''} found
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {results.length} travel option{results.length !== 1 ? 's' : ''} found
+            </h2>
+            {(flights.length > 0 || trains.length > 0) && (
+              <p className="text-sm text-gray-500 mt-1">
+                {flights.length > 0 && `${flights.length} flight${flights.length !== 1 ? 's' : ''}`}
+                {flights.length > 0 && trains.length > 0 && ' • '}
+                {trains.length > 0 && `${trains.length} train${trains.length !== 1 ? 's' : ''}`}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Sort by:</span>
             <select
@@ -110,18 +123,20 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
         </div>
       </div>
 
-      {/* Flight Cards */}
+      {/* Travel Option Cards */}
       <div className="space-y-3">
-        {displayResults.map((flight, index) => {
-          const stopsInfo = getStopsDisplay(flight.stops)
+        {displayResults.map((result, index) => {
+          const stopsInfo = getStopsDisplay(result.stops)
           const isTopResult = index === 0
+          const isTrain = result.source === 'Amtrak'
+          const isFlight = result.source === 'Google Flights'
           
           return (
             <div
               key={index}
               className={`bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${
                 isTopResult ? 'ring-2 ring-indigo-500' : ''
-              }`}
+              } ${isTrain ? 'border-l-4 border-blue-500' : ''}`}
             >
               {isTopResult && (
                 <div className="bg-indigo-500 text-white text-xs font-medium px-3 py-1">
@@ -131,14 +146,26 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
               
               <div className="p-4">
                 <div className="flex items-center justify-between">
-                  {/* Left: Flight Info */}
+                  {/* Left: Travel Info */}
                   <div className="flex-1">
-                    {/* Airline */}
+                    {/* Provider/Transport Type */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">✈️</span>
-                      <span className="font-semibold text-gray-800">
-                        {flight.provider || 'Multiple Airlines'}
-                      </span>
+                      <span className="text-2xl">{isTrain ? '🚂' : '✈️'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800">
+                          {result.provider || (isTrain ? 'Amtrak' : 'Multiple Airlines')}
+                        </span>
+                        {isTrain && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                            Train
+                          </span>
+                        )}
+                        {isFlight && (
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full font-medium">
+                            Flight
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Time and Route */}
@@ -146,20 +173,20 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       {/* Departure */}
                       <div className="text-center">
                         <p className="text-xl font-bold text-gray-900">
-                          {flight.departure?.time || '--:--'}
+                          {result.departure?.time || (isTrain ? '—' : '--:--')}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {flight.departure?.location || 'Origin'}
+                          {result.departure?.location || 'Origin'}
                         </p>
                       </div>
                       
-                      {/* Flight Path Visual */}
+                      {/* Path Visual */}
                       <div className="flex-1 flex items-center px-4">
-                        <div className="flex-1 border-t-2 border-gray-300 border-dashed relative">
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full"></div>
+                        <div className={`flex-1 border-t-2 ${isTrain ? 'border-blue-300 border-solid' : 'border-gray-300 border-dashed'} relative`}>
+                          <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-400' : 'bg-gray-400'} rounded-full`}></div>
+                          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${isTrain ? 'bg-blue-500' : 'bg-indigo-500'} rounded-full`}></div>
                           <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-xs text-gray-500 whitespace-nowrap">
-                            {flight.duration || 'N/A'}
+                            {result.duration || 'N/A'}
                           </div>
                           {stopsInfo && (
                             <div className={`absolute left-1/2 -translate-x-1/2 top-2 text-xs px-2 py-0.5 rounded-full ${stopsInfo.className}`}>
@@ -172,39 +199,64 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       {/* Arrival */}
                       <div className="text-center">
                         <p className="text-xl font-bold text-gray-900">
-                          {flight.arrival?.time || '--:--'}
+                          {result.arrival?.time || (isTrain ? '—' : '--:--')}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {flight.arrival?.location || 'Destination'}
+                          {result.arrival?.location || 'Destination'}
                         </p>
                       </div>
                     </div>
                     
-                    {/* Bags Info */}
-                    {flight.bags && (
+                    {/* Additional Info */}
+                    {result.bags && (
                       <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                        <span>🧳</span> {flight.bags}
+                        <span>🧳</span> {result.bags}
+                      </p>
+                    )}
+                    {isTrain && result.trainData && result.trainData.sampleCount > 1 && (
+                      <p className="text-xs text-blue-600 mt-2">
+                        Average of {result.trainData.sampleCount} similar trains
+                        {result.trainData.priceRange && (
+                          <span className="text-gray-500 ml-1">
+                            (${result.trainData.priceRange.min} - ${result.trainData.priceRange.max})
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
                   
                   {/* Right: Price */}
                   <div className="ml-6 text-right border-l pl-6 border-gray-200">
-                    <p className="text-2xl font-bold text-indigo-600">
-                      {formatPrice(flight.price, flight.currency)}
+                    <p className={`text-2xl font-bold ${isTrain ? 'text-blue-600' : 'text-indigo-600'}`}>
+                      {formatPrice(result.price, result.currency)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {flight.priceFormatted ? 'per person' : ''}
+                      {result.priceFormatted ? 'per person' : ''}
                     </p>
-                    <button 
-                      onClick={handleGoogleFlightsClick}
-                      className="mt-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      View on Google Flights
-                    </button>
+                    {isFlight && (
+                      <button 
+                        onClick={handleGoogleFlightsClick}
+                        className="mt-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        View on Google Flights
+                      </button>
+                    )}
+                    {isTrain && (
+                      <a 
+                        href="https://www.amtrak.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Book on Amtrak
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -231,7 +283,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              Show {remainingCount} more flight{remainingCount !== 1 ? 's' : ''}
+              Show {remainingCount} more option{remainingCount !== 1 ? 's' : ''}
             </>
           )}
         </button>
