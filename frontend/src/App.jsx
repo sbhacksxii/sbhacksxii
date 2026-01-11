@@ -11,6 +11,16 @@ function App() {
   const [error, setError] = useState(null)
   const [sortBy, setSortBy] = useState('price')
   const [searchParams, setSearchParams] = useState(null)
+  
+  // Form state management for SearchForm
+  const [formValues, setFormValues] = useState({
+    from: '',
+    to: '',
+    departDate: '',
+    returnDate: '',
+    tripType: 'oneway',
+    sortBy: 'price'
+  })
 
   // API URL - uses environment variable in production
   // TODO: Replace with your actual Railway URL if env var isn't working
@@ -81,6 +91,45 @@ function App() {
     }
   }
 
+  // Callback for Chatbot to update form values
+  const handleChatbotFormUpdate = (searchParams) => {
+    if (searchParams) {
+      setFormValues(prev => {
+        const updated = {
+          ...prev,
+          ...searchParams
+        }
+        
+        // Check if all required fields are filled after update
+        const hasFrom = updated.from && updated.from.trim()
+        const hasTo = updated.to && updated.to.trim()
+        const hasDepartDate = updated.departDate && updated.departDate.trim()
+        const hasTripType = updated.tripType
+        const hasReturnDate = updated.tripType === 'roundtrip' 
+          ? (updated.returnDate && updated.returnDate.trim())
+          : true // Return date only required for round trips
+        
+        // If all required fields are present, trigger search automatically
+        if (hasFrom && hasTo && hasDepartDate && hasTripType && hasReturnDate) {
+          console.log('🤖 Auto-triggering search from chatbot form fill')
+          // Use setTimeout to avoid state update issues
+          setTimeout(() => {
+            handleSearch({
+              from: updated.from.trim(),
+              to: updated.to.trim(),
+              departDate: updated.departDate.trim(),
+              returnDate: updated.tripType === 'roundtrip' ? updated.returnDate.trim() : null,
+              tripType: updated.tripType,
+              sortBy: updated.sortBy || 'price'
+            })
+          }, 100)
+        }
+        
+        return updated
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -113,7 +162,12 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Search Form & Results */}
           <div className="lg:col-span-2">
-            <SearchForm onSearch={handleSearch} loading={loading} />
+            <SearchForm 
+              onSearch={handleSearch} 
+              loading={loading}
+              formValues={formValues}
+              onFormValuesChange={setFormValues}
+            />
             
             {error && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
@@ -137,7 +191,7 @@ function App() {
 
           {/* Right Column - Chatbot */}
           <div className="lg:col-span-1">
-            <Chatbot />
+            <Chatbot onFormUpdate={handleChatbotFormUpdate} />
           </div>
         </div>
       </main>
