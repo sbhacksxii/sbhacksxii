@@ -204,16 +204,17 @@ function Chatbot() {
 
   // Send message to backend
   const sendMessageToBackend = async (messageText) => {
+    // Determine API URL - use proxy in dev, full URL in production
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    const apiUrl = isProduction 
+      ? (import.meta.env.VITE_API_URL || 'https://sbhacksxii-production.up.railway.app')
+      : '' // Empty string uses Vite proxy in development
+    
+    // Build request URL - handle empty apiUrl for proxy
+    const requestUrl = apiUrl ? `${apiUrl}/api/chat` : '/api/chat'
+    console.log('Chatbot: Sending request to:', requestUrl)
+    
     try {
-      // Determine API URL - use proxy in dev, full URL in production
-      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-      const apiUrl = isProduction 
-        ? (import.meta.env.VITE_API_URL || 'https://sbhacksxii-production.up.railway.app')
-        : '' // Empty string uses Vite proxy in development
-      
-      const requestUrl = `${apiUrl}/api/chat`
-      console.log('Chatbot: Sending request to:', requestUrl)
-      
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: {
@@ -238,9 +239,13 @@ function Chatbot() {
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
     } catch (err) {
       console.error('Chatbot error:', err)
+      console.error('Chatbot: Request URL was:', requestUrl)
+      const errorMsg = err.message.includes('404') 
+        ? `Connection error (404): The backend server is not reachable. ${isProduction ? 'Please verify the backend is deployed at ' + apiUrl : 'Please ensure the backend server is running on port 3001.'}`
+        : err.message
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `Sorry, I encountered an error: ${err.message}. Please try again later.`
+        content: `Sorry, I encountered an error: ${errorMsg}. Please try again later.`
       }])
     } finally {
       setLoading(false)
