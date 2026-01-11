@@ -15,6 +15,8 @@ import {
   buildConnections, 
   findPotentialHubs, 
   getMajorHubCodes,
+  getHubsInCorridor,
+  DEFAULT_CORRIDOR_WIDTH_MILES,
   MAJOR_HUB_AIRPORTS
 } from './services/connectionService.js';
 
@@ -70,6 +72,7 @@ async function checkDatabase(searchParams) {
   console.log('📊 [DATABASE] Checking for cached results...');
   console.log(`   Route: ${from} → ${to}`);
   console.log(`   Date: ${departDate}${returnDate ? ` - ${returnDate}` : ''}`);
+  console.log(`   Trip Type: ${tripType || 'oneway'}`);
   
   const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
   const client = new MongoClient(uri); 
@@ -80,14 +83,29 @@ async function checkDatabase(searchParams) {
     await client.connect(); 
     const db = client.db(dbName); 
     const collection = db.collection(collectionName); 
-    const query = {'departure.location': from, 'arrival.location': to, departDate: departDate, returnDate: returnDate || null, type: tripType};
+    
+    // Use case-insensitive regex for location matching
+    // Also check for the departDate and trip type to get relevant cached data
+    const query = {
+      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
+      departDate: departDate,
+      // Filter by trip type to ensure one-way and round-trip results are cached separately
+      type: tripType === 'roundtrip' ? 'roundtrip' : 'oneway'
+    };
+    
+    // For round-trip searches, also match the specific return date
+    if (tripType === 'roundtrip' && returnDate) {
+      query.returnDate = returnDate;
+    }
+    
     const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
-     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
+     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached ${tripType} results`);
      return cachedResults;
     }
 
-    console.log('❌ [DATABASE] No cached results found, will use scraper');
+    console.log(`❌ [DATABASE] No cached ${tripType} results found, will use scraper`);
     return null;
 
    } catch(error) {
@@ -99,13 +117,15 @@ async function checkDatabase(searchParams) {
 }
 
 /**
- * Fetch flights from database for a specific route (without date constraint for connections)
+ * Fetch ONE-WAY flights from database for a specific route (for connections)
+ * Connections always use one-way pricing since roundtrip prices differ
  */
 async function fetchFlightsFromDBForRoute(from, to, client, collection) {
   try {
     const query = {
       'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
-      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') }
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
+      type: 'oneway' // Only fetch one-way flights for connections
     };
     const flights = await collection.find(query).toArray();
     return flights;
@@ -118,9 +138,21 @@ async function fetchFlightsFromDBForRoute(from, to, client, collection) {
 /**
  * Fetch hub flights for connections
  * Checks database first, then scrapes missing routes if needed
+ * 
+ * IMPORTANT: Connections are always one-way. This function only fetches one-way flights.
+ * 
+ * For flight-to-flight connections, uses geographic corridor filtering to only
+ * search for hubs that lie between origin and destination.
+ * 
+ * @param {string} from - Origin airport code
+ * @param {string} to - Destination airport code
+ * @param {string} departDate - Departure date
+ * @param {number} corridorWidthMiles - Width of corridor for flight-flight (default 200)
  */
-async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
+async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
   console.log('\n🔗 [HUBS] Fetching flight data for connection hubs...');
+  console.log(`   ℹ️  Connections use ONE-WAY flights only`);
+  console.log(`   📏 Corridor width: ${corridorWidthMiles} miles`);
   
   const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
   const client = new MongoClient(uri);
@@ -130,22 +162,19 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
     const db = client.db("TravelData");
     const collection = db.collection('PlaneData');
     
-    // Get relevant hubs for this route
-    const hubs = await findPotentialHubs(from, to, false);
+    // Get relevant hubs for this route (with corridor filtering for flight-flight)
+    const hubs = await findPotentialHubs(from, to, false, corridorWidthMiles);
     
     // Collect hub codes to search
     const amtrakHubsTo = hubs.flightToAmtrak?.hubs || [];
     const amtrakHubsFrom = hubs.amtrakToFlight?.hubs || [];
     
-    // Get major flight hubs (limit to top 5 for performance)
-    const flightHubs = getMajorHubCodes().filter(h => 
-      h.toUpperCase() !== from.toUpperCase() && 
-      h.toUpperCase() !== to.toUpperCase()
-    ).slice(0, 5);
+    // Get flight hubs from the corridor (already filtered by findPotentialHubs)
+    const flightHubsInCorridor = hubs.flightToFlight?.hubs || [];
     
     console.log(`   Amtrak hubs (to dest): ${amtrakHubsTo.join(', ') || 'none'}`);
     console.log(`   Amtrak hubs (from origin): ${amtrakHubsFrom.join(', ') || 'none'}`);
-    console.log(`   Flight hubs: ${flightHubs.join(', ')}`);
+    console.log(`   Flight hubs in corridor: ${flightHubsInCorridor.join(', ') || 'none'}`);
     
     const allHubFlights = [];
     const routesToScrape = [];
@@ -168,42 +197,56 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
     }
     
     // Routes for Flight → Flight connections (origin → hub → destination)
-    for (const hub of flightHubs) {
+    // Only search hubs that are in the geographic corridor
+    for (const hub of flightHubsInCorridor) {
       routesToCheck.push({ from, to: hub, type: 'flight-flight-leg1' });
       routesToCheck.push({ from: hub, to, type: 'flight-flight-leg2' });
     }
     
-    // Check database for each route
+    // Check database for each route (only one-way flights)
     console.log(`\n   Checking ${routesToCheck.length} hub routes in database...`);
     
     for (const route of routesToCheck) {
-      const dbFlights = await fetchFlightsFromDBForRoute(route.from, route.to, client, collection);
+      // Query for one-way flights only
+      const query = {
+        'departure.location': { $regex: new RegExp(`^${route.from}$`, 'i') },
+        'arrival.location': { $regex: new RegExp(`^${route.to}$`, 'i') },
+        type: 'oneway'
+      };
       
-      if (dbFlights.length > 0) {
-        console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} flights`);
-        allHubFlights.push(...dbFlights);
-      } else {
-        // Mark for scraping
+      try {
+        const dbFlights = await collection.find(query).toArray();
+        
+        if (dbFlights.length > 0) {
+          console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} one-way flights`);
+          allHubFlights.push(...dbFlights);
+        } else {
+          // Mark for scraping
+          routesToScrape.push(route);
+          console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
+        }
+      } catch (error) {
+        console.error(`   ❌ DB error for ${route.from}→${route.to}: ${error.message}`);
         routesToScrape.push(route);
-        console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
       }
     }
     
     // Scrape missing routes (limit to avoid timeout)
+    // Always scrape as ONE-WAY (null returnDate)
     const MAX_SCRAPES = 3; // Limit concurrent scrapes to avoid long wait times
     const scrapesToRun = routesToScrape.slice(0, MAX_SCRAPES);
     
     if (scrapesToRun.length > 0) {
-      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes (max ${MAX_SCRAPES})...`);
+      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes as ONE-WAY (max ${MAX_SCRAPES})...`);
       
       for (const route of scrapesToRun) {
         try {
-          console.log(`   Scraping: ${route.from}→${route.to}...`);
+          console.log(`   Scraping: ${route.from}→${route.to} (one-way)...`);
           const scrapedFlights = await scrapeGoogleFlights(
             route.from,
             route.to,
             departDate,
-            tripType === 'roundtrip' ? returnDate : null
+            null // ALWAYS null - connections use one-way flights only
           );
           
           if (scrapedFlights && scrapedFlights.length > 0) {
@@ -233,7 +276,7 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
       }
     }
     
-    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length}`);
+    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length} (all one-way)`);
     return uniqueFlights;
     
   } catch (error) {
@@ -378,6 +421,7 @@ app.post('/api/search', async (req, res) => {
     let flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
     // Step 2: If no database results, use web scraper
+    // Note: The scraper (flightScraper.js) automatically saves results to MongoDB
     if (!flightResults) {
       console.log('🌐 [SCRAPER] Starting web scraper...');
       flightResults = await scrapeGoogleFlights(
@@ -386,9 +430,6 @@ app.post('/api/search', async (req, res) => {
         departDate,
         tripType === 'roundtrip' ? returnDate : null
       );
-      
-      // TODO: Save results to database for caching
-      // await db.flights.insertMany(results.map(r => ({ ...r, scrapedAt: new Date() })));
     }
 
     // Step 3: Fetch train data in parallel
@@ -409,10 +450,12 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 4: Fetch hub flights for connections
-    // This populates the database with flights to/from major hubs
+    // This populates the database with ONE-WAY flights to/from major hubs
+    // Uses geographic corridor filtering for flight-to-flight connections
+    // Corridor width can be adjusted (default 200 miles)
     let hubFlights = [];
     try {
-      hubFlights = await fetchHubFlights(from, to, departDate, returnDate, tripType);
+      hubFlights = await fetchHubFlights(from, to, departDate); // Always one-way for connections
     } catch (hubError) {
       console.error('⚠️ [HUBS] Error fetching hub flights:', hubError.message);
     }
