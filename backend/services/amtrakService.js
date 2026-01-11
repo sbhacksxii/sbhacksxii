@@ -1,23 +1,23 @@
 /**
  * =====================================================
- * AMTRAK FARE LOOKUP SERVICE
+ * AMTRAK FARE LOOKUP SERVICE (OPTIMIZED)
  * =====================================================
  * 
  * This service provides fare lookup functionality for Amtrak trains
  * using a static JSON dataset of manually collected fares.
  * 
+ * OPTIMIZATIONS:
+ * --------------
+ * 1. Indexed lookup maps for O(1) route lookups instead of O(n) filtering
+ * 2. Pre-computed grouped train results at startup
+ * 3. Route graph for quick connection lookups
+ * 
  * HOW THE LOOKUP WORKS:
  * ---------------------
  * 1. The service loads fare data from a JSON file on startup
- * 2. When a fare is requested, it first looks for an exact match
- *    (same origin, destination, and date)
- * 3. If no exact match exists, it finds all fares for that route
- *    and returns the one with the closest date, marking it as "estimated"
- * 4. If no route exists at all, it returns null
- * 
- * The "estimated" flag helps the frontend indicate to users that
- * the displayed fare is an approximation based on nearby dates,
- * not the actual fare for their requested date.
+ * 2. It builds indexed maps for fast lookups (by origin, dest, route)
+ * 3. When a fare is requested, it uses O(1) map lookup instead of filtering
+ * 4. Grouped results are pre-computed, not calculated on-demand
  */
 
 import { readFile } from 'fs/promises';
@@ -29,15 +29,44 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // =====================================================
-// DATA LOADING
+// DATA STORAGE
 // =====================================================
 
-// In-memory cache for fare data (loaded once at startup)
+// Raw data (loaded once at startup)
 let faresData = null;
 let stationsData = null;
 
+// =====================================================
+// INDEXED LOOKUP MAPS (O(1) lookups instead of O(n) filtering)
+// =====================================================
+
+// Index by origin station: origin -> array of fares
+let faresByOrigin = new Map();
+
+// Index by destination station: dest -> array of fares
+let faresByDest = new Map();
+
+// Index by route: "ORIGIN-DEST" -> array of fares
+let faresByRoute = new Map();
+
+// Pre-computed grouped results: "ORIGIN-DEST" -> grouped/averaged results
+let groupedRouteCache = new Map();
+
+// Route graph: origin -> Set of reachable destinations
+let routeGraph = new Map();
+
+// Reverse route graph: destination -> Set of origins that can reach it
+let reverseRouteGraph = new Map();
+
+// Flag to track if indexes are built
+let indexesBuilt = false;
+
+// =====================================================
+// DATA LOADING & INDEX BUILDING
+// =====================================================
+
 /**
- * Loads the Amtrak fares JSON file into memory.
+ * Loads the Amtrak fares JSON file into memory and builds indexes.
  * This is called once when the service is first used.
  * 
  * @returns {Promise<Array>} Array of fare objects
@@ -52,12 +81,88 @@ async function loadFaresData() {
     const rawData = await readFile(faresPath, 'utf-8');
     faresData = JSON.parse(rawData);
     console.log(`✅ [AMTRAK] Loaded ${faresData.length} fare records`);
+    
+    // Build indexes after loading data
+    await buildIndexes();
+    
     return faresData;
   } catch (error) {
     console.error('❌ [AMTRAK] Failed to load fares data:', error.message);
     faresData = [];
     return faresData;
   }
+}
+
+/**
+ * Builds all indexed lookup maps for O(1) access.
+ * Called automatically after loading fare data.
+ */
+async function buildIndexes() {
+  if (indexesBuilt) return;
+  
+  const startTime = Date.now();
+  console.log('🔧 [AMTRAK] Building indexed lookup maps...');
+  
+  // Clear existing indexes
+  faresByOrigin.clear();
+  faresByDest.clear();
+  faresByRoute.clear();
+  groupedRouteCache.clear();
+  routeGraph.clear();
+  reverseRouteGraph.clear();
+  
+  // Build indexes from fare data
+  for (const fare of faresData) {
+    const origin = normalizeCode(fare.origin);
+    const dest = normalizeCode(fare.dest);
+    const routeKey = `${origin}-${dest}`;
+    
+    // Index by origin
+    if (!faresByOrigin.has(origin)) {
+      faresByOrigin.set(origin, []);
+    }
+    faresByOrigin.get(origin).push(fare);
+    
+    // Index by destination
+    if (!faresByDest.has(dest)) {
+      faresByDest.set(dest, []);
+    }
+    faresByDest.get(dest).push(fare);
+    
+    // Index by route
+    if (!faresByRoute.has(routeKey)) {
+      faresByRoute.set(routeKey, []);
+    }
+    faresByRoute.get(routeKey).push(fare);
+    
+    // Build route graph
+    if (!routeGraph.has(origin)) {
+      routeGraph.set(origin, new Set());
+    }
+    routeGraph.get(origin).add(dest);
+    
+    // Build reverse route graph
+    if (!reverseRouteGraph.has(dest)) {
+      reverseRouteGraph.set(dest, new Set());
+    }
+    reverseRouteGraph.get(dest).add(origin);
+  }
+  
+  // Pre-compute grouped results for each route
+  console.log('🔧 [AMTRAK] Pre-computing grouped train results...');
+  for (const [routeKey, routeFares] of faresByRoute) {
+    const grouped = groupAndAverageTrains(routeFares, 10); // Store more results in cache
+    groupedRouteCache.set(routeKey, grouped);
+  }
+  
+  indexesBuilt = true;
+  const elapsed = Date.now() - startTime;
+  
+  console.log(`✅ [AMTRAK] Indexes built in ${elapsed}ms:`);
+  console.log(`   📊 ${faresByOrigin.size} unique origins`);
+  console.log(`   📊 ${faresByDest.size} unique destinations`);
+  console.log(`   📊 ${faresByRoute.size} unique routes`);
+  console.log(`   📊 ${groupedRouteCache.size} pre-computed grouped results`);
 }
 
 /**
@@ -80,6 +185,16 @@ async function loadStationsData() {
     console.error('❌ [AMTRAK] Failed to load stations data:', error.message);
     stationsData = [];
     return stationsData;
+  }
+}
+
+/**
+ * Ensures indexes are built before any lookup.
+ * Call this at server startup for best performance.
+ */
+async function ensureIndexes() {
+  if (!indexesBuilt) {
+    await loadFaresData();
   }
 }
 
@@ -123,26 +238,17 @@ function normalizeCode(code) {
 }
 
 // =====================================================
-// MAIN LOOKUP FUNCTION
+// OPTIMIZED LOOKUP FUNCTIONS (using indexed maps)
 // =====================================================
 
 /**
  * Looks up an Amtrak fare for a given route and date.
+ * OPTIMIZED: Uses indexed map for O(1) route lookup.
  * 
  * @param {string} origin - Origin station code (e.g., "SBA")
  * @param {string} dest - Destination station code (e.g., "LAX")
  * @param {string} date - Travel date in YYYY-MM-DD format
  * @returns {Promise<AmtrakFareResult|null>} Fare result or null if route doesn't exist
- * 
- * @typedef {Object} AmtrakFareResult
- * @property {string} origin - Origin station code
- * @property {string} dest - Destination station code
- * @property {string} queriedDate - The date that was requested
- * @property {string} matchedDate - The date of the fare that was found
- * @property {number} priceUSD - Fare price in USD
- * @property {number} durationMin - Trip duration in minutes
- * @property {number} transfers - Number of transfers
- * @property {boolean} isEstimated - True if fare is from a nearby date (not exact match)
  */
 async function getAmtrakFare(origin, dest, date) {
   // Validate inputs
@@ -151,22 +257,20 @@ async function getAmtrakFare(origin, dest, date) {
     return null;
   }
 
+  // Ensure indexes are built
+  await ensureIndexes();
+
   // Normalize station codes
   const normalizedOrigin = normalizeCode(origin);
   const normalizedDest = normalizeCode(dest);
+  const routeKey = `${normalizedOrigin}-${normalizedDest}`;
 
-  // Load fare data
-  const fares = await loadFaresData();
-
-  // Step 1: Find all fares for this route
-  const routeFares = fares.filter(
-    fare => normalizeCode(fare.origin) === normalizedOrigin &&
-            normalizeCode(fare.dest) === normalizedDest
-  );
+  // O(1) lookup using indexed map
+  const routeFares = faresByRoute.get(routeKey);
 
   // If no fares exist for this route, return null
-  if (routeFares.length === 0) {
-    console.log(`❌ [AMTRAK] No fares found for route: ${normalizedOrigin} → ${normalizedDest}`);
+  if (!routeFares || routeFares.length === 0) {
+    console.log(`❌ [AMTRAK] No fares found for route: ${routeKey}`);
     return null;
   }
 
@@ -174,7 +278,7 @@ async function getAmtrakFare(origin, dest, date) {
   const exactMatch = routeFares.find(fare => fare.date === date);
 
   if (exactMatch) {
-    console.log(`✅ [AMTRAK] Exact match found for ${normalizedOrigin} → ${normalizedDest} on ${date}`);
+    console.log(`✅ [AMTRAK] Exact match found for ${routeKey} on ${date}`);
     return {
       origin: normalizedOrigin,
       dest: normalizedDest,
@@ -200,7 +304,7 @@ async function getAmtrakFare(origin, dest, date) {
   }
 
   if (closestFare) {
-    console.log(`📅 [AMTRAK] Estimated fare for ${normalizedOrigin} → ${normalizedDest}: ` +
+    console.log(`📅 [AMTRAK] Estimated fare for ${routeKey}: ` +
                 `queried ${date}, using ${closestFare.date} (${closestDiff} days diff)`);
     return {
       origin: normalizedOrigin,
@@ -214,8 +318,80 @@ async function getAmtrakFare(origin, dest, date) {
     };
   }
 
-  // Should never reach here, but just in case
   return null;
+}
+
+/**
+ * Gets all fares for a route (for all dates).
+ * OPTIMIZED: Uses indexed map for O(1) lookup.
+ * 
+ * @param {string} origin - Origin station code
+ * @param {string} dest - Destination station code
+ * @returns {Promise<Array>} Array of all fare objects for this route
+ */
+async function getAllFaresForRoute(origin, dest) {
+  await ensureIndexes();
+  
+  const normalizedOrigin = normalizeCode(origin);
+  const normalizedDest = normalizeCode(dest);
+  const routeKey = `${normalizedOrigin}-${normalizedDest}`;
+  
+  // O(1) lookup
+  return faresByRoute.get(routeKey) || [];
+}
+
+/**
+ * Gets all fares departing from an origin.
+ * OPTIMIZED: Uses indexed map for O(1) lookup.
+ * 
+ * @param {string} origin - Origin station code
+ * @returns {Promise<Array>} Array of fare objects from this origin
+ */
+async function getFaresFromOrigin(origin) {
+  await ensureIndexes();
+  const normalizedOrigin = normalizeCode(origin);
+  return faresByOrigin.get(normalizedOrigin) || [];
+}
+
+/**
+ * Gets all fares arriving at a destination.
+ * OPTIMIZED: Uses indexed map for O(1) lookup.
+ * 
+ * @param {string} dest - Destination station code
+ * @returns {Promise<Array>} Array of fare objects to this destination
+ */
+async function getFaresToDest(dest) {
+  await ensureIndexes();
+  const normalizedDest = normalizeCode(dest);
+  return faresByDest.get(normalizedDest) || [];
+}
+
+/**
+ * Gets all destinations reachable from an origin.
+ * OPTIMIZED: Uses pre-built route graph for O(1) lookup.
+ * 
+ * @param {string} origin - Origin station code
+ * @returns {Promise<string[]>} Array of destination station codes
+ */
+async function getDestinationsFrom(origin) {
+  await ensureIndexes();
+  const normalizedOrigin = normalizeCode(origin);
+  const destinations = routeGraph.get(normalizedOrigin);
+  return destinations ? Array.from(destinations) : [];
+}
+
+/**
+ * Gets all origins that can reach a destination.
+ * OPTIMIZED: Uses pre-built reverse route graph for O(1) lookup.
+ * 
+ * @param {string} dest - Destination station code
+ * @returns {Promise<string[]>} Array of origin station codes
+ */
+async function getOriginsTo(dest) {
+  await ensureIndexes();
+  const normalizedDest = normalizeCode(dest);
+  const origins = reverseRouteGraph.get(normalizedDest);
+  return origins ? Array.from(origins) : [];
 }
 
 // =====================================================
@@ -245,41 +421,20 @@ async function getStationByCode(code) {
 
 /**
  * Gets all available routes in the fare dataset.
+ * OPTIMIZED: Uses pre-built faresByRoute map.
  * 
  * @returns {Promise<Array>} Array of unique route objects {origin, dest}
  */
 async function getAvailableRoutes() {
-  const fares = await loadFaresData();
-  const routeSet = new Set();
-  const routes = [];
-
-  for (const fare of fares) {
-    const key = `${fare.origin}-${fare.dest}`;
-    if (!routeSet.has(key)) {
-      routeSet.add(key);
-      routes.push({ origin: fare.origin, dest: fare.dest });
-    }
-  }
-
-  return routes;
-}
-
-/**
- * Gets all fares for a route (for all dates).
- * 
- * @param {string} origin - Origin station code
- * @param {string} dest - Destination station code
- * @returns {Promise<Array>} Array of all fare objects for this route
- */
-async function getAllFaresForRoute(origin, dest) {
-  const normalizedOrigin = normalizeCode(origin);
-  const normalizedDest = normalizeCode(dest);
-  const fares = await loadFaresData();
+  await ensureIndexes();
   
-  return fares.filter(
-    fare => normalizeCode(fare.origin) === normalizedOrigin &&
-            normalizeCode(fare.dest) === normalizedDest
-  );
+  const routes = [];
+  for (const routeKey of faresByRoute.keys()) {
+    const [origin, dest] = routeKey.split('-');
+    routes.push({ origin, dest });
+  }
+  
+  return routes;
 }
 
 /**
@@ -467,6 +622,7 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
 
 /**
  * Gets grouped and averaged train results for a route.
+ * OPTIMIZED: Uses pre-computed cache for instant results.
  * 
  * @param {string} origin - Origin station code or city name
  * @param {string} dest - Destination station code or city name
@@ -474,6 +630,8 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
  * @returns {Promise<Array>} Array of grouped and averaged train results
  */
 async function getGroupedTrainResults(origin, dest, maxResults = 5) {
+  await ensureIndexes();
+  
   // Normalize input first
   const normalizedOrigin = normalizeCode(origin);
   const normalizedDest = normalizeCode(dest);
@@ -503,14 +661,22 @@ async function getGroupedTrainResults(origin, dest, maxResults = 5) {
     }
   }
   
-  // Get all fares for this route
-  const fares = await getAllFaresForRoute(originCode, destCode);
+  const routeKey = `${originCode}-${destCode}`;
   
-  if (fares.length === 0) {
+  // O(1) lookup from pre-computed cache
+  const cached = groupedRouteCache.get(routeKey);
+  
+  if (cached) {
+    // Return cached results, sliced to maxResults
+    return cached.slice(0, maxResults);
+  }
+  
+  // Fallback: compute on-demand if not in cache (shouldn't happen normally)
+  const fares = faresByRoute.get(routeKey);
+  if (!fares || fares.length === 0) {
     return [];
   }
   
-  // Group and average similar trains
   return groupAndAverageTrains(fares, maxResults);
 }
 
@@ -520,7 +686,29 @@ async function getGroupedTrainResults(origin, dest, maxResults = 5) {
 function clearCache() {
   faresData = null;
   stationsData = null;
+  faresByOrigin.clear();
+  faresByDest.clear();
+  faresByRoute.clear();
+  groupedRouteCache.clear();
+  routeGraph.clear();
+  reverseRouteGraph.clear();
+  indexesBuilt = false;
   console.log('🔄 [AMTRAK] Cache cleared');
+}
+
+/**
+ * Get cache statistics for monitoring
+ */
+function getCacheStats() {
+  return {
+    indexesBuilt,
+    faresLoaded: faresData?.length || 0,
+    stationsLoaded: stationsData?.length || 0,
+    uniqueOrigins: faresByOrigin.size,
+    uniqueDestinations: faresByDest.size,
+    uniqueRoutes: faresByRoute.size,
+    preComputedGroups: groupedRouteCache.size
+  };
 }
 
 // =====================================================
@@ -537,6 +725,13 @@ export {
   getGroupedTrainResults,
   groupAndAverageTrains,
   clearCache,
+  // New optimized exports
+  ensureIndexes,
+  getFaresFromOrigin,
+  getFaresToDest,
+  getDestinationsFrom,
+  getOriginsTo,
+  getCacheStats,
   // Export for testing
   loadFaresData,
   loadStationsData,

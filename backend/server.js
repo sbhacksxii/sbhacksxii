@@ -12,7 +12,9 @@ import {
   getStations, 
   getStationByCode,
   getAvailableRoutes,
-  getGroupedTrainResults
+  getGroupedTrainResults,
+  ensureIndexes,
+  getCacheStats
 } from './services/amtrakService.js';
 import { 
   buildConnections, 
@@ -22,6 +24,12 @@ import {
   DEFAULT_CORRIDOR_WIDTH_MILES,
   MAJOR_HUB_AIRPORTS
 } from './services/connectionService.js';
+import {
+  getCachedConnections,
+  cacheConnections,
+  initializeCacheIndexes,
+  getCacheStats as getConnectionCacheStats
+} from './services/connectionCache.js';
 
 dotenv.config();
 
@@ -784,46 +792,62 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 5: Build connections (flight + train combinations, flight + flight via hubs)
-    // Combine direct flights with hub flights for connection building
-    const allFlightsForConnections = [...(flightResults || []), ...hubFlights];
-    
-    // Deduplicate flights
-    const seenFlightIds = new Set();
-    const uniqueFlightsForConnections = allFlightsForConnections.filter(flight => {
-      const id = flight._id?.toString() || JSON.stringify(flight);
-      if (seenFlightIds.has(id)) return false;
-      seenFlightIds.add(id);
-      return true;
-    });
-    
+    // Check cache first for connections
     let connectionResults = [];
-    if (uniqueFlightsForConnections.length > 0) {
-      try {
-        console.log('\n🔗 [CONNECTIONS] Building multi-modal connections...');
-        console.log(`   Total flights available: ${uniqueFlightsForConnections.length}`);
-        console.log('   Searching: Flight → Amtrak, Amtrak → Flight, Flight → Flight via hubs');
-        
-        connectionResults = await buildConnections(
-          uniqueFlightsForConnections, 
-          trainResults, 
-          from, 
-          to, 
-          departDate, 
-          null, // Always null for one-way
-          false // verbose off for production
-        );
-        console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
-        
-        // Log breakdown by type
-        const flightAmtrak = connectionResults.filter(c => c.connectionType === 'flight-amtrak').length;
-        const amtrakFlight = connectionResults.filter(c => c.connectionType === 'amtrak-flight').length;
-        const flightFlight = connectionResults.filter(c => c.connectionType === 'flight-flight').length;
-        if (connectionResults.length > 0) {
-          console.log(`   Breakdown: ${flightAmtrak} flight→amtrak, ${amtrakFlight} amtrak→flight, ${flightFlight} flight→flight`);
+    const cachedConnections = await getCachedConnections(from, to, 'oneway');
+    
+    if (cachedConnections && cachedConnections.connections && cachedConnections.connections.length > 0) {
+      // Use cached connections
+      connectionResults = cachedConnections.connections;
+      console.log(`⚡ [CONNECTIONS] Using ${connectionResults.length} cached connections`);
+    } else {
+      // Combine direct flights with hub flights for connection building
+      const allFlightsForConnections = [...(flightResults || []), ...hubFlights];
+      
+      // Deduplicate flights
+      const seenFlightIds = new Set();
+      const uniqueFlightsForConnections = allFlightsForConnections.filter(flight => {
+        const id = flight._id?.toString() || JSON.stringify(flight);
+        if (seenFlightIds.has(id)) return false;
+        seenFlightIds.add(id);
+        return true;
+      });
+      
+      if (uniqueFlightsForConnections.length > 0) {
+        try {
+          console.log('\n🔗 [CONNECTIONS] Building multi-modal connections...');
+          console.log(`   Total flights available: ${uniqueFlightsForConnections.length}`);
+          console.log('   Searching: Flight → Amtrak, Amtrak → Flight, Flight → Flight via hubs');
+          
+          connectionResults = await buildConnections(
+            uniqueFlightsForConnections, 
+            trainResults, 
+            from, 
+            to, 
+            departDate, 
+            null, // Always null for one-way
+            false // verbose off for production
+          );
+          console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
+          
+          // Log breakdown by type
+          const flightAmtrak = connectionResults.filter(c => c.connectionType === 'flight-amtrak').length;
+          const amtrakFlight = connectionResults.filter(c => c.connectionType === 'amtrak-flight').length;
+          const flightFlight = connectionResults.filter(c => c.connectionType === 'flight-flight').length;
+          if (connectionResults.length > 0) {
+            console.log(`   Breakdown: ${flightAmtrak} flight→amtrak, ${amtrakFlight} amtrak→flight, ${flightFlight} flight→flight`);
+          }
+          
+          // Cache the connections for future requests (don't await - do it in background)
+          if (connectionResults.length > 0) {
+            const hubsInfo = await findPotentialHubs(from, to, false);
+            cacheConnections(from, to, connectionResults, hubsInfo, 'oneway')
+              .catch(err => console.error('⚠️ [CACHE] Background cache error:', err.message));
+          }
+        } catch (connectionError) {
+          console.error('⚠️ [CONNECTIONS] Error building connections:', connectionError.message);
+          // Continue without connections - don't fail the entire request
         }
-      } catch (connectionError) {
-        console.error('⚠️ [CONNECTIONS] Error building connections:', connectionError.message);
-        // Continue without connections - don't fail the entire request
       }
     }
 
@@ -1324,6 +1348,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Cache stats endpoint (for monitoring)
+app.get('/api/cache/stats', async (req, res) => {
+  try {
+    const amtrakStats = getCacheStats();
+    const connectionCacheStats = getConnectionCacheStats();
+    res.json({
+      amtrak: amtrakStats,
+      connectionCache: connectionCacheStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get cache stats' });
+  }
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
@@ -1349,13 +1388,40 @@ app.get('/', (req, res) => {
   });
 });
 
+// Initialize indexes and caches on startup
+async function initializeServer() {
+  console.log('\n🔧 [INIT] Initializing server...');
+  
+  try {
+    // Initialize Amtrak indexed lookups (builds O(1) lookup maps)
+    console.log('🚂 [INIT] Building Amtrak indexes...');
+    await ensureIndexes();
+    const amtrakStats = getCacheStats();
+    console.log(`   ✅ Amtrak indexes ready: ${amtrakStats.uniqueRoutes} routes, ${amtrakStats.preComputedGroups} pre-computed groups`);
+    
+    // Initialize MongoDB cache indexes
+    console.log('💾 [INIT] Initializing connection cache indexes...');
+    await initializeCacheIndexes();
+    console.log('   ✅ Cache indexes ready');
+    
+  } catch (error) {
+    console.error('⚠️ [INIT] Initialization error:', error.message);
+    // Continue anyway - server can still function, just slower
+  }
+}
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log('\n╔════════════════════════════════════════╗');
   console.log('║     Travel Hub Backend API Server      ║');
+  console.log('║         (OPTIMIZED VERSION)            ║');
   console.log('╚════════════════════════════════════════╝');
   console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log('📡 API endpoints:');
+  
+  // Initialize indexes and caches in background
+  await initializeServer();
+  
+  console.log('\n📡 API endpoints:');
   console.log('   POST /api/search - Search for travel options');
   console.log('   GET  /api/health - Health check');
   console.log('   POST /api/chat - Chatbot endpoint');
@@ -1366,4 +1432,5 @@ app.listen(PORT, () => {
   console.log('   GET  /api/amtrak/stations/:code - Get station by code');
   console.log('   GET  /api/amtrak/routes - List available routes');
   console.log('\n🌐 Allowed origins:', allowedOrigins.join(', ') || 'all .netlify.app domains');
+  console.log('\n✨ Server ready with optimized indexes and caching!');
 });
