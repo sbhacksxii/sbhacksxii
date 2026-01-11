@@ -13,7 +13,10 @@ npm install
 ```
 PORT=3001
 NODE_ENV=development
+GROQ_API_KEY=your_groq_api_key_here
 ```
+
+Get your Groq API key from: https://console.groq.com/
 
 3. Run development server:
 ```bash

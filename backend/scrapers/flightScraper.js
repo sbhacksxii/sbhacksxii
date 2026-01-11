@@ -304,7 +304,8 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
       stops: flight.stops,
       bags: flight.bags,
       source: 'Google Flights',
-      rawSummary: flight.rawSummary
+      rawSummary: flight.rawSummary,
+      fullUrl: url
     }));
     
     await client.connect(); 
