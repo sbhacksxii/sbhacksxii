@@ -1,5 +1,60 @@
 import { useState, useEffect, useRef } from 'react'
 
+// Hardcoded list of airports and Amtrak stations
+const LOCATIONS = [
+  // Major Hub Airports
+  { code: 'LAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', type: 'airport' },
+  { code: 'SFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', type: 'airport' },
+  { code: 'OAK', name: 'Oakland International Airport', city: 'Oakland', state: 'CA', type: 'airport' },
+  { code: 'SJC', name: 'San Jose International Airport', city: 'San Jose', state: 'CA', type: 'airport' },
+  { code: 'SAN', name: 'San Diego International Airport', city: 'San Diego', state: 'CA', type: 'airport' },
+  { code: 'DEN', name: 'Denver International Airport', city: 'Denver', state: 'CO', type: 'airport' },
+  { code: 'SLC', name: 'Salt Lake City International Airport', city: 'Salt Lake City', state: 'UT', type: 'airport' },
+  { code: 'SEA', name: 'Seattle-Tacoma International Airport', city: 'Seattle', state: 'WA', type: 'airport' },
+  { code: 'PDX', name: 'Portland International Airport', city: 'Portland', state: 'OR', type: 'airport' },
+  { code: 'ORD', name: "Chicago O'Hare International Airport", city: 'Chicago', state: 'IL', type: 'airport' },
+  { code: 'DFW', name: 'Dallas/Fort Worth International Airport', city: 'Dallas', state: 'TX', type: 'airport' },
+  { code: 'AUS', name: 'Austin-Bergstrom International Airport', city: 'Austin', state: 'TX', type: 'airport' },
+  { code: 'IAH', name: 'George Bush Intercontinental Airport', city: 'Houston', state: 'TX', type: 'airport' },
+  { code: 'MSY', name: 'Louis Armstrong New Orleans International Airport', city: 'New Orleans', state: 'LA', type: 'airport' },
+  { code: 'ATL', name: 'Hartsfield-Jackson Atlanta International Airport', city: 'Atlanta', state: 'GA', type: 'airport' },
+  { code: 'JFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', type: 'airport' },
+  { code: 'LGA', name: 'LaGuardia Airport', city: 'New York', state: 'NY', type: 'airport' },
+  { code: 'EWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', type: 'airport' },
+  { code: 'BOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', type: 'airport' },
+  { code: 'DCA', name: 'Ronald Reagan Washington National Airport', city: 'Washington DC', state: 'DC', type: 'airport' },
+  { code: 'IAD', name: 'Washington Dulles International Airport', city: 'Washington DC', state: 'VA', type: 'airport' },
+  { code: 'PHX', name: 'Phoenix Sky Harbor International Airport', city: 'Phoenix', state: 'AZ', type: 'airport' },
+  { code: 'LAS', name: 'Harry Reid International Airport', city: 'Las Vegas', state: 'NV', type: 'airport' },
+  { code: 'MIA', name: 'Miami International Airport', city: 'Miami', state: 'FL', type: 'airport' },
+  { code: 'MCO', name: 'Orlando International Airport', city: 'Orlando', state: 'FL', type: 'airport' },
+  { code: 'MSP', name: 'Minneapolis-Saint Paul International Airport', city: 'Minneapolis', state: 'MN', type: 'airport' },
+  { code: 'DTW', name: 'Detroit Metropolitan Airport', city: 'Detroit', state: 'MI', type: 'airport' },
+  { code: 'CLT', name: 'Charlotte Douglas International Airport', city: 'Charlotte', state: 'NC', type: 'airport' },
+  { code: 'PHL', name: 'Philadelphia International Airport', city: 'Philadelphia', state: 'PA', type: 'airport' },
+  
+  // Amtrak Stations
+  { code: 'LAX', name: 'Los Angeles Union Station', city: 'Los Angeles', state: 'CA', type: 'station' },
+  { code: 'SBA', name: 'Santa Barbara Station', city: 'Santa Barbara', state: 'CA', type: 'station' },
+  { code: 'SAN', name: 'San Diego Santa Fe Depot', city: 'San Diego', state: 'CA', type: 'station' },
+  { code: 'SAC', name: 'Sacramento Valley Station', city: 'Sacramento', state: 'CA', type: 'station' },
+  { code: 'CHI', name: 'Chicago Union Station', city: 'Chicago', state: 'IL', type: 'station' },
+  { code: 'NYP', name: 'New York Penn Station', city: 'New York', state: 'NY', type: 'station' },
+  { code: 'BOS', name: 'Boston South Station', city: 'Boston', state: 'MA', type: 'station' },
+  { code: 'WAS', name: 'Washington Union Station', city: 'Washington', state: 'DC', type: 'station' },
+  { code: 'PHL', name: 'Philadelphia 30th Street Station', city: 'Philadelphia', state: 'PA', type: 'station' },
+  { code: 'SEA', name: 'Seattle King Street Station', city: 'Seattle', state: 'WA', type: 'station' },
+  { code: 'PDX', name: 'Portland Union Station', city: 'Portland', state: 'OR', type: 'station' },
+  { code: 'DEN', name: 'Denver Union Station', city: 'Denver', state: 'CO', type: 'station' },
+  { code: 'ABQ', name: 'Albuquerque Station', city: 'Albuquerque', state: 'NM', type: 'station' },
+  { code: 'NOL', name: 'New Orleans Union Passenger Terminal', city: 'New Orleans', state: 'LA', type: 'station' },
+  { code: 'SFC', name: 'San Francisco / Emeryville Station', city: 'San Francisco Bay Area', state: 'CA', type: 'station' },
+  { code: 'OMA', name: 'Omaha Station', city: 'Omaha', state: 'NE', type: 'station' },
+  { code: 'SLC', name: 'Salt Lake City Station', city: 'Salt Lake City', state: 'UT', type: 'station' },
+  { code: 'KYC', name: 'Kansas City Union Station', city: 'Kansas City', state: 'MO', type: 'station' },
+  { code: 'SPK', name: 'Spokane Station', city: 'Spokane', state: 'WA', type: 'station' },
+]
+
 // Autocomplete dropdown component
 function LocationAutocomplete({ 
   id, 
@@ -153,10 +208,6 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   const [internalReturnDate, setInternalReturnDate] = useState('')
   const [internalTripType, setInternalTripType] = useState('oneway')
   const [internalSortBy, setInternalSortBy] = useState('price')
-  
-  // Locations data from API
-  const [locations, setLocations] = useState([])
-  const [locationsLoading, setLocationsLoading] = useState(true)
 
   // Use controlled values if provided, otherwise use internal state
   const startLocation = formValues?.from ?? internalStartLocation
@@ -165,37 +216,6 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
   const returnDate = formValues?.returnDate ?? internalReturnDate
   const tripType = formValues?.tripType ?? internalTripType
   const sortBy = formValues?.sortBy ?? internalSortBy
-
-  // Fetch locations on mount
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        // Use the same API URL pattern as the rest of the app
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-        const API_URL = isProduction 
-          ? 'https://sbhacksxii-production.up.railway.app'
-          : (import.meta.env.VITE_API_URL || '')
-        
-        const requestUrl = API_URL ? `${API_URL}/api/locations` : '/api/locations'
-        console.log('Fetching locations from:', requestUrl)
-        
-        const response = await fetch(requestUrl)
-        if (response.ok) {
-          const data = await response.json()
-          setLocations(data)
-          console.log(`Loaded ${data.length} locations`)
-        } else {
-          console.error('Failed to fetch locations:', response.status)
-        }
-      } catch (error) {
-        console.error('Error fetching locations:', error)
-      } finally {
-        setLocationsLoading(false)
-      }
-    }
-    
-    fetchLocations()
-  }, [])
 
   // Update internal state when controlled props change
   useEffect(() => {
@@ -301,40 +321,28 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
             <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
               From
             </label>
-            {locationsLoading ? (
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-400">
-                Loading locations...
-              </div>
-            ) : (
-              <LocationAutocomplete
-                id="start"
-                value={startLocation}
-                onChange={updateStartLocation}
-                placeholder="Airport or station (e.g., LAX, SBA)"
-                locations={locations}
-                required
-              />
-            )}
+            <LocationAutocomplete
+              id="start"
+              value={startLocation}
+              onChange={updateStartLocation}
+              placeholder="Airport or station (e.g., LAX, SBA)"
+              locations={LOCATIONS}
+              required
+            />
           </div>
 
           <div>
             <label htmlFor="end" className="block text-sm font-medium text-gray-700 mb-1">
               To
             </label>
-            {locationsLoading ? (
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-400">
-                Loading locations...
-              </div>
-            ) : (
-              <LocationAutocomplete
-                id="end"
-                value={endLocation}
-                onChange={updateEndLocation}
-                placeholder="Airport or station (e.g., JFK, NYP)"
-                locations={locations}
-                required
-              />
-            )}
+            <LocationAutocomplete
+              id="end"
+              value={endLocation}
+              onChange={updateEndLocation}
+              placeholder="Airport or station (e.g., JFK, NYP)"
+              locations={LOCATIONS}
+              required
+            />
           </div>
         </div>
 
@@ -391,7 +399,7 @@ function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
 
         <button
           type="submit"
-          disabled={loading || locationsLoading}
+          disabled={loading}
           className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
