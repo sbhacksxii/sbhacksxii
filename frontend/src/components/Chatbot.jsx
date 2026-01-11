@@ -219,7 +219,10 @@ function Chatbot() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: messageText })
+        body: JSON.stringify({ 
+          message: messageText,
+          messages: messages // Pass conversation history for context
+        })
       })
 
       console.log('Chatbot: Response status:', response.status)
