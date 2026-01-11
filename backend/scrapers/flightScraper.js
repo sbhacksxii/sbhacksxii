@@ -284,7 +284,7 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
 
     // Normalize and structure the data
     const normalizedFlights = flights.map(flight => ({
-      type: 'flight',
+      type: returnDate ? 'roundtrip' : 'oneway',
       departure: {
         location: from,
         time: normalizeTime(flight.departureTime)
@@ -294,6 +294,8 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
         time: normalizeTime(flight.arrivalTime)
       },
       duration: flight.duration,
+      departDate: departDate,
+      returnDate: returnDate || null,
       durationMinutes: parseDurationToMinutes(flight.duration),
       price: flight.price ? parseFloat(flight.price.replace(/[$,]/g, '')) : null,
       priceFormatted: flight.price,

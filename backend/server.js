@@ -52,7 +52,7 @@ app.use(express.json());
  * - Return null to trigger scraper if no data or stale
  */
 async function checkDatabase(searchParams) {
-  const {from, to, departDate, tripType } = searchParams;
+  const {from, to, departDate, returnDate, tripType} = searchParams;
   
   console.log('📊 [DATABASE] Checking for cached results...');
   console.log(`   Route: ${from} → ${to}`);
@@ -67,7 +67,7 @@ async function checkDatabase(searchParams) {
     await client.connect(); 
     const db = client.db(dbName); 
     const collection = db.collection(collectionName); 
-    const query = {departure: {location: from}, arrival: {location: to}, date: departDate, tripType};
+    const query = {'departure.location': from, 'arrival.location': to, departDate: departDate, returnDate: returnDate || null, type: tripType};
     const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
      console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
@@ -77,7 +77,7 @@ async function checkDatabase(searchParams) {
     console.log('❌ [DATABASE] No cached results found, will use scraper');
     return null;
 
-  } catch (error) {
+   } catch(error) {
      console.error('❌ Database check error:', error);
      return null;
   } finally {
@@ -113,7 +113,7 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 1: Check database first (placeholder)
-    let results = await checkDatabase({ from, to, departDate, tripType});
+    let results = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
     // Step 2: If no database results, use web scraper
     if (!results) {
