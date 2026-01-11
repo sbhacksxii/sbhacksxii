@@ -82,7 +82,7 @@ const AIRPORT_TO_AMTRAK_MAP = {
   'IAD': 'WAS',
   'BWI': 'WAS',
   
-  // New Orleans: MSY -> NOL
+  // New Orleans: MSY -> NOL (Note: NOL not currently in fares data)
   'MSY': 'NOL',
   
   // Kansas City: MCI -> KYC
@@ -94,9 +94,20 @@ const AIRPORT_TO_AMTRAK_MAP = {
   // Sacramento: SMF -> SAC
   'SMF': 'SAC',
   
-  // San Francisco area: OAK, SJC can connect to Emeryville (SFO in Amtrak data)
-  'OAK': 'SFO',  // Emeryville is close to Oakland
-  'SJC': 'SFO',  // Can take bus connection to Emeryville
+  // San Francisco area: SFO, OAK, SJC all connect to Amtrak SFC (San Francisco/Emeryville)
+  // Fares data uses SFC code for SF Bay Area Amtrak service
+  'SFO': 'SFC',  // SF International -> Amtrak SFC
+  'OAK': 'SFC',  // Oakland airport -> Amtrak SFC (Emeryville is close)
+  'SJC': 'SFC',  // San Jose -> Amtrak SFC (bus connection available)
+  
+  // Philadelphia: PHL airport = PHL Amtrak (same code, but add for completeness)
+  // No mapping needed - same code
+  
+  // Omaha: OMA airport = OMA Amtrak (same code)
+  // No mapping needed - same code
+  
+  // Albuquerque: ABQ airport = ABQ Amtrak (same code)
+  // No mapping needed - same code
 };
 
 // Reverse mapping: Amtrak station code -> array of airport codes
@@ -108,7 +119,7 @@ const AMTRAK_TO_AIRPORTS_MAP = {
   'KYC': ['MCI'],
   'SPK': ['GEG'],
   'SAC': ['SMF'],
-  'SFO': ['SFO', 'OAK', 'SJC'],  // SFO maps to itself plus nearby airports
+  'SFC': ['SFO', 'OAK', 'SJC'],  // SF Bay Area airports -> Amtrak SFC
 };
 
 /**
