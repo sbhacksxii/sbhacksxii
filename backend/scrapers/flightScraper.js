@@ -79,6 +79,46 @@ function deduplicateFlights(flights) {
 }
 
 /**
+ * Check if the page indicates no flights found
+ */
+async function checkNoFlightsFound(page) {
+  return await page.evaluate(() => {
+    const pageText = document.body.innerText || document.body.textContent || '';
+    const lowerText = pageText.toLowerCase();
+    
+    // Common "no flights" indicators
+    const noFlightsIndicators = [
+      'no flights found',
+      'no flights available',
+      'we couldn\'t find any flights',
+      'no results found',
+      'try different dates',
+      'no matching flights'
+    ];
+    
+    // Check for any of these indicators
+    for (const indicator of noFlightsIndicators) {
+      if (lowerText.includes(indicator)) {
+        return true;
+      }
+    }
+    
+    // Also check for specific error messages or empty state elements
+    const errorElements = document.querySelectorAll('[class*="error"], [class*="empty"], [class*="no-results"]');
+    if (errorElements.length > 0) {
+      for (const el of errorElements) {
+        const elText = (el.innerText || el.textContent || '').toLowerCase();
+        if (noFlightsIndicators.some(indicator => elText.includes(indicator))) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  });
+}
+
+/**
  * Extract flight data from page using specified selectors
  */
 async function extractFlightData(page) {
@@ -261,21 +301,53 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
   // Set user agent to avoid bot detection
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
+  let timeoutOccurred = false;
+  let noFlightsDetected = false;
+
   try {
     // Navigate directly to Google Flights search
     const url = buildGoogleFlightsUrl(from, to, departDate, returnDate);
     console.log(`\n🔗 Navigating to: ${url}\n`);
     
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+    } catch (navError) {
+      if (navError.message.includes('timeout') || navError.message.includes('Navigation timeout')) {
+        console.log('⏱️ Navigation timeout - checking if page loaded...');
+        timeoutOccurred = true;
+        // Page might still be partially loaded, continue to check for no flights
+      } else {
+        throw navError;
+      }
+    }
     
     // Wait for the page to load flight results
     console.log('⏳ Waiting for flight results to load...');
     
-    // Wait for flight results container
-    await page.waitForSelector('li.pIav2d, div.gQ6yfe', { timeout: 30000 });
+    let selectorFound = false;
+    try {
+      await page.waitForSelector('li.pIav2d, div.gQ6yfe', { timeout: 30000 });
+      selectorFound = true;
+    } catch (selectorError) {
+      if (selectorError.message.includes('timeout')) {
+        console.log('⏱️ Selector timeout - no flight cards found, checking for no-flights message...');
+        timeoutOccurred = true;
+      } else {
+        throw selectorError;
+      }
+    }
     
-    // Give extra time for dynamic content
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Give extra time for dynamic content (only if selector was found)
+    if (selectorFound) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    // Check if page indicates no flights found
+    noFlightsDetected = await checkNoFlightsFound(page);
+    
+    if (noFlightsDetected) {
+      console.log('🚫 No flights found message detected on page');
+    }
     
     // Extract flight data
     const rawFlights = await extractFlightData(page);
@@ -284,6 +356,73 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
     const flights = deduplicateFlights(rawFlights);
     
     console.log(`\n📊 Raw results: ${rawFlights.length} | After deduplication: ${flights.length}`);
+    
+    // Determine if we should save a "no flights" entry
+    const shouldSaveNoFlightsEntry = (flights.length === 0 && (timeoutOccurred || noFlightsDetected));
+    
+    if (shouldSaveNoFlightsEntry) {
+      console.log('💾 Saving "no flights found" entry to database to prevent future scrapes...');
+      
+      // Create a special entry indicating no flights were found
+      const noFlightsEntry = {
+        type: returnDate ? 'roundtrip' : 'oneway',
+        departure: {
+          location: from,
+          time: null
+        },
+        arrival: {
+          location: to,
+          time: null
+        },
+        duration: null,
+        departDate: departDate,
+        returnDate: returnDate || null,
+        durationMinutes: null,
+        price: null,
+        priceFormatted: null,
+        currency: 'USD',
+        provider: null,
+        stops: null,
+        bags: null,
+        source: 'Google Flights',
+        rawSummary: null,
+        fullUrl: url,
+        noFlightsFound: true,  // Flag indicating no flights were found
+        reason: timeoutOccurred ? 'timeout' : (noFlightsDetected ? 'no_flights_message' : 'empty_results')
+      };
+      
+      try {
+        await client.connect(); 
+        const db = client.db(dbName); 
+        const collection = db.collection(collectionName);
+        
+        // Use upsert to avoid duplicates
+        await collection.updateOne(
+          {
+            'departure.location': from,
+            'arrival.location': to,
+            type: returnDate ? 'roundtrip' : 'oneway',
+            departDate: departDate,
+            noFlightsFound: true
+          },
+          { $set: noFlightsEntry },
+          { upsert: true }
+        );
+        
+        await client.close();
+        console.log('✅ Saved "no flights found" entry to database');
+      } catch (dbError) {
+        console.error('❌ Error saving no-flights entry:', dbError.message);
+        // Don't throw - we still want to return empty array
+      }
+      
+      return [];
+    }
+    
+    if (flights.length === 0) {
+      console.log('⚠️ No flights extracted, but no timeout or no-flights message detected');
+      return [];
+    }
     
     console.log(`\n✅ Found ${flights.length} unique flight results\n`);
 
@@ -310,20 +449,83 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
       bags: flight.bags,
       source: 'Google Flights',
       rawSummary: flight.rawSummary,
-      fullUrl: url
+      fullUrl: url,
+      noFlightsFound: false  // Explicitly mark that flights were found
     }));
     
-    await client.connect(); 
-    const db = client.db(dbName); 
-    const collection = db.collection(collectionName); 
-    await collection.insertMany(normalizedFlights); 
-    await client.close(); 
+    try {
+      await client.connect(); 
+      const db = client.db(dbName); 
+      const collection = db.collection(collectionName); 
+      await collection.insertMany(normalizedFlights); 
+      await client.close();
+    } catch (dbError) {
+      console.error('❌ Error saving flights to database:', dbError.message);
+      // Continue even if DB save fails
+    }
 
     return normalizedFlights; 
     
 
   } catch (error) {
     console.error('❌ Error scraping Google Flights:', error.message);
+    
+    // If it's a timeout error, save a no-flights entry
+    if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+      console.log('💾 Timeout occurred - saving "no flights found" entry to database...');
+      
+      const url = buildGoogleFlightsUrl(from, to, departDate, returnDate);
+      const noFlightsEntry = {
+        type: returnDate ? 'roundtrip' : 'oneway',
+        departure: {
+          location: from,
+          time: null
+        },
+        arrival: {
+          location: to,
+          time: null
+        },
+        duration: null,
+        departDate: departDate,
+        returnDate: returnDate || null,
+        durationMinutes: null,
+        price: null,
+        priceFormatted: null,
+        currency: 'USD',
+        provider: null,
+        stops: null,
+        bags: null,
+        source: 'Google Flights',
+        rawSummary: null,
+        fullUrl: url,
+        noFlightsFound: true,
+        reason: 'timeout'
+      };
+      
+      try {
+        await client.connect(); 
+        const db = client.db(dbName); 
+        const collection = db.collection(collectionName);
+        
+        await collection.updateOne(
+          {
+            'departure.location': from,
+            'arrival.location': to,
+            type: returnDate ? 'roundtrip' : 'oneway',
+            departDate: departDate,
+            noFlightsFound: true
+          },
+          { $set: noFlightsEntry },
+          { upsert: true }
+        );
+        
+        await client.close();
+        console.log('✅ Saved "no flights found" entry to database');
+      } catch (dbError) {
+        console.error('❌ Error saving no-flights entry:', dbError.message);
+      }
+    }
+    
     return [];
   } finally {
     await browser.close();

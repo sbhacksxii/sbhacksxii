@@ -108,6 +108,7 @@ app.use(express.json());
  * =====================================================
  * Checks for cached flight data using the global connection pool.
  * No more creating new connections for each request!
+ * Also checks for "no flights found" entries to skip scraping.
  */
 async function checkDatabase(searchParams) {
   const {from, to, departDate, returnDate, tripType} = searchParams;
@@ -119,11 +120,45 @@ async function checkDatabase(searchParams) {
   
   try {
     const type = tripType === 'roundtrip' ? 'roundtrip' : 'oneway';
+    
+    // First, check for actual flight results
     const cachedResults = await queryFlights(from, to, type, departDate, returnDate);
     
     if (cachedResults && cachedResults.length > 0) {
-      console.log(`✅ [DATABASE] Found ${cachedResults.length} cached ${tripType} results`);
-      return cachedResults;
+      // Filter out any "no flights found" entries (shouldn't happen, but just in case)
+      const actualFlights = cachedResults.filter(f => !f.noFlightsFound);
+      if (actualFlights.length > 0) {
+        console.log(`✅ [DATABASE] Found ${actualFlights.length} cached ${tripType} results`);
+        return actualFlights;
+      }
+    }
+
+    // Check for "no flights found" entries
+    const { db } = await getDatabase();
+    const collection = db.collection('PlaneData');
+    
+    const noFlightsQuery = {
+      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
+      type: type,
+      noFlightsFound: true
+    };
+    
+    if (departDate) {
+      noFlightsQuery.departDate = departDate;
+    }
+    
+    if (type === 'roundtrip' && returnDate) {
+      noFlightsQuery.returnDate = returnDate;
+    }
+    
+    const noFlightsEntry = await collection.findOne(noFlightsQuery);
+    
+    if (noFlightsEntry) {
+      console.log(`🚫 [DATABASE] Found "no flights found" entry for this route - skipping scraper`);
+      console.log(`   Reason: ${noFlightsEntry.reason || 'unknown'}`);
+      // Return empty array to indicate no flights, but don't trigger scraper
+      return [];
     }
 
     console.log(`❌ [DATABASE] No cached ${tripType} results found, will use scraper`);
@@ -201,14 +236,42 @@ async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAUL
     for (const flight of allHubFlights) {
       const depLoc = flight.departure?.location?.toUpperCase();
       const arrLoc = flight.arrival?.location?.toUpperCase();
-      if (depLoc && arrLoc) {
+      if (depLoc && arrLoc && !flight.noFlightsFound) {
         routesWithFlights.add(`${depLoc}-${arrLoc}`);
+      }
+    }
+    
+    // Also check for "no flights found" entries to skip those routes
+    const { db } = await getDatabase();
+    const collection = db.collection('PlaneData');
+    const routesWithNoFlights = new Set();
+    
+    for (const route of routesToCheck) {
+      const key = `${route.from.toUpperCase()}-${route.to.toUpperCase()}`;
+      if (!routesWithFlights.has(key)) {
+        // Check if there's a "no flights found" entry for this route
+        const noFlightsQuery = {
+          'departure.location': { $regex: new RegExp(`^${route.from}$`, 'i') },
+          'arrival.location': { $regex: new RegExp(`^${route.to}$`, 'i') },
+          type: 'oneway',
+          noFlightsFound: true
+        };
+        
+        if (departDate) {
+          noFlightsQuery.departDate = departDate;
+        }
+        
+        const noFlightsEntry = await collection.findOne(noFlightsQuery);
+        if (noFlightsEntry) {
+          routesWithNoFlights.add(key);
+          console.log(`   🚫 Route ${route.from}→${route.to} has "no flights found" entry - skipping`);
+        }
       }
     }
     
     const routesToScrape = routesToCheck.filter(route => {
       const key = `${route.from.toUpperCase()}-${route.to.toUpperCase()}`;
-      return !routesWithFlights.has(key);
+      return !routesWithFlights.has(key) && !routesWithNoFlights.has(key);
     });
     
     // Scrape missing routes (limit to avoid timeout)
@@ -224,6 +287,8 @@ async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAUL
           if (scrapedFlights && scrapedFlights.length > 0) {
             console.log(`   ✅ Scraped ${route.from}→${route.to}: ${scrapedFlights.length} flights`);
             allHubFlights.push(...scrapedFlights);
+          } else {
+            console.log(`   ℹ️ No flights found for ${route.from}→${route.to} (entry saved to DB)`);
           }
         } catch (scrapeError) {
           console.error(`   ❌ Scrape failed ${route.from}→${route.to}: ${scrapeError.message}`);
