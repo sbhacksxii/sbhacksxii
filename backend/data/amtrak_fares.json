@@ -248,6 +248,86 @@
     "priceUSD": 98,
     "durationMin": 635,
     "transfers": 2
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "5:00 AM",
+    "priceUSD": 32,
+    "durationMin": 165,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "7:13 AM",
+    "priceUSD": 31,
+    "durationMin": 162,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:13 AM",
+    "priceUSD": 31,
+    "durationMin": 154,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:51 AM",
+    "priceUSD": 35,
+    "durationMin": 143,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "11:13 AM",
+    "priceUSD": 31,
+    "durationMin": 153,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "3:13 PM",
+    "priceUSD": 31,
+    "durationMin": 152,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "7:13 PM",
+    "priceUSD": 31,
+    "durationMin": 166,
+    "transfers": 0
+  },
+
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:13 AM",
+    "priceUSD": 49,
+    "durationMin": 181,
+    "transfers": 1
   }
 
 ]
