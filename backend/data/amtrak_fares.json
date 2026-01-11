@@ -158,6 +158,57 @@
     "priceUSD": 113,
     "durationMin": 791,
     "transfers": 3
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SFC",
+    "date": "2026-02-15",
+    "departureTime": "11:47 AM",
+    "priceUSD": 48,
+    "durationMin": 493,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SFC",
+    "date": "2026-02-15",
+    "departureTime": "12:21 PM",
+    "priceUSD": 64,
+    "durationMin": 609,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SFC",
+    "date": "2026-02-15",
+    "departureTime": "12:21 PM",
+    "priceUSD": 64,
+    "durationMin": 609,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SFC",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "priceUSD": 98,
+    "durationMin": 610,
+    "transfers": 2
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SFC",
+    "date": "2026-02-15",
+    "departureTime": "6:53 AM",
+    "priceUSD": 123,
+    "durationMin": 817,
+    "transfers": 3
   }
+
 
 ]
