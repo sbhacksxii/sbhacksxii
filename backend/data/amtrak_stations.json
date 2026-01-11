@@ -1,0 +1,92 @@
+[
+  {
+    "code": "LAX",
+    "name": "Los Angeles Union Station",
+    "city": "Los Angeles",
+    "state": "CA"
+  },
+  {
+    "code": "SBA",
+    "name": "Santa Barbara Station",
+    "city": "Santa Barbara",
+    "state": "CA"
+  },
+  {
+    "code": "SAN",
+    "name": "San Diego Santa Fe Depot",
+    "city": "San Diego",
+    "state": "CA"
+  },
+  {
+    "code": "SFO",
+    "name": "San Francisco (Emeryville)",
+    "city": "Emeryville",
+    "state": "CA"
+  },
+  {
+    "code": "SAC",
+    "name": "Sacramento Valley Station",
+    "city": "Sacramento",
+    "state": "CA"
+  },
+  {
+    "code": "CHI",
+    "name": "Chicago Union Station",
+    "city": "Chicago",
+    "state": "IL"
+  },
+  {
+    "code": "NYP",
+    "name": "New York Penn Station",
+    "city": "New York",
+    "state": "NY"
+  },
+  {
+    "code": "BOS",
+    "name": "Boston South Station",
+    "city": "Boston",
+    "state": "MA"
+  },
+  {
+    "code": "WAS",
+    "name": "Washington Union Station",
+    "city": "Washington",
+    "state": "DC"
+  },
+  {
+    "code": "PHL",
+    "name": "Philadelphia 30th Street Station",
+    "city": "Philadelphia",
+    "state": "PA"
+  },
+  {
+    "code": "SEA",
+    "name": "Seattle King Street Station",
+    "city": "Seattle",
+    "state": "WA"
+  },
+  {
+    "code": "PDX",
+    "name": "Portland Union Station",
+    "city": "Portland",
+    "state": "OR"
+  },
+  {
+    "code": "DEN",
+    "name": "Denver Union Station",
+    "city": "Denver",
+    "state": "CO"
+  },
+  {
+    "code": "ABQ",
+    "name": "Albuquerque Station",
+    "city": "Albuquerque",
+    "state": "NM"
+  },
+  {
+    "code": "NOL",
+    "name": "New Orleans Union Passenger Terminal",
+    "city": "New Orleans",
+    "state": "LA"
+  }
+]

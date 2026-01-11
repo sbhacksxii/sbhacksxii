@@ -3,6 +3,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
 import { MongoClient } from 'mongodb';
+import { 
+  getAmtrakFare, 
+  getStations, 
+  getStationByCode,
+  getAvailableRoutes 
+} from './services/amtrakService.js';
 
 dotenv.config();
 
@@ -301,6 +307,102 @@ app.get('/api/recommendations', async (req, res) => {
   }
 });
 
+// =====================================================
+// AMTRAK FARE ENDPOINTS
+// =====================================================
+
+/**
+ * Get Amtrak fare for a route and date
+ * GET /api/amtrak/fare?origin=SBA&dest=LAX&date=2026-02-15
+ */
+app.get('/api/amtrak/fare', async (req, res) => {
+  try {
+    const { origin, dest, date } = req.query;
+
+    // Validate required parameters
+    if (!origin || !dest || !date) {
+      return res.status(400).json({
+        error: 'Missing required parameters',
+        required: ['origin', 'dest', 'date'],
+        example: '/api/amtrak/fare?origin=SBA&dest=LAX&date=2026-02-15'
+      });
+    }
+
+    console.log(`\n🚂 [AMTRAK] Fare lookup: ${origin} → ${dest} on ${date}`);
+
+    const fare = await getAmtrakFare(origin, dest, date);
+
+    if (!fare) {
+      return res.status(404).json({
+        error: 'No fare found for this route',
+        origin,
+        dest,
+        date,
+        message: 'This route may not exist in our dataset'
+      });
+    }
+
+    console.log(`✅ [AMTRAK] Found fare: $${fare.priceUSD} (${fare.isEstimated ? 'estimated' : 'exact'})`);
+    res.json(fare);
+
+  } catch (error) {
+    console.error('❌ Amtrak fare lookup error:', error);
+    res.status(500).json({ error: 'Failed to look up Amtrak fare' });
+  }
+});
+
+/**
+ * Get all Amtrak stations
+ * GET /api/amtrak/stations
+ */
+app.get('/api/amtrak/stations', async (req, res) => {
+  try {
+    const stations = await getStations();
+    res.json(stations);
+  } catch (error) {
+    console.error('❌ Amtrak stations error:', error);
+    res.status(500).json({ error: 'Failed to load stations' });
+  }
+});
+
+/**
+ * Get a specific station by code
+ * GET /api/amtrak/stations/:code
+ */
+app.get('/api/amtrak/stations/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const station = await getStationByCode(code);
+
+    if (!station) {
+      return res.status(404).json({
+        error: 'Station not found',
+        code,
+        message: 'This station code does not exist in our dataset'
+      });
+    }
+
+    res.json(station);
+  } catch (error) {
+    console.error('❌ Amtrak station lookup error:', error);
+    res.status(500).json({ error: 'Failed to look up station' });
+  }
+});
+
+/**
+ * Get all available routes
+ * GET /api/amtrak/routes
+ */
+app.get('/api/amtrak/routes', async (req, res) => {
+  try {
+    const routes = await getAvailableRoutes();
+    res.json(routes);
+  } catch (error) {
+    console.error('❌ Amtrak routes error:', error);
+    res.status(500).json({ error: 'Failed to load routes' });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -315,7 +417,13 @@ app.get('/', (req, res) => {
       search: 'POST /api/search',
       health: 'GET /api/health',
       chat: 'POST /api/chat',
-      recommendations: 'GET /api/recommendations'
+      recommendations: 'GET /api/recommendations',
+      amtrak: {
+        fare: 'GET /api/amtrak/fare?origin=SBA&dest=LAX&date=2026-02-15',
+        stations: 'GET /api/amtrak/stations',
+        station: 'GET /api/amtrak/stations/:code',
+        routes: 'GET /api/amtrak/routes'
+      }
     }
   });
 });
@@ -331,5 +439,10 @@ app.listen(PORT, () => {
   console.log('   GET  /api/health - Health check');
   console.log('   POST /api/chat - Chatbot endpoint');
   console.log('   GET  /api/recommendations - Recommendations');
+  console.log('   🚂 Amtrak endpoints:');
+  console.log('   GET  /api/amtrak/fare - Look up Amtrak fare');
+  console.log('   GET  /api/amtrak/stations - List all stations');
+  console.log('   GET  /api/amtrak/stations/:code - Get station by code');
+  console.log('   GET  /api/amtrak/routes - List available routes');
   console.log('\n🌐 Allowed origins:', allowedOrigins.join(', ') || 'all .netlify.app domains');
 });

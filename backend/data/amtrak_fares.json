@@ -1,0 +1,226 @@
+[
+  {
+    "origin": "SBA",
+    "dest": "LAX",
+    "date": "2026-02-15",
+    "priceUSD": 45,
+    "durationMin": 165,
+    "transfers": 0
+  },
+  {
+    "origin": "SBA",
+    "dest": "LAX",
+    "date": "2026-02-20",
+    "priceUSD": 42,
+    "durationMin": 165,
+    "transfers": 0
+  },
+  {
+    "origin": "SBA",
+    "dest": "LAX",
+    "date": "2026-03-01",
+    "priceUSD": 48,
+    "durationMin": 165,
+    "transfers": 0
+  },
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "priceUSD": 45,
+    "durationMin": 165,
+    "transfers": 0
+  },
+  {
+    "origin": "LAX",
+    "dest": "SBA",
+    "date": "2026-02-20",
+    "priceUSD": 42,
+    "durationMin": 165,
+    "transfers": 0
+  },
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "priceUSD": 52,
+    "durationMin": 330,
+    "transfers": 1
+  },
+  {
+    "origin": "SBA",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "priceUSD": 188,
+    "durationMin": 2400,
+    "transfers": 1
+  },
+  {
+    "origin": "SBA",
+    "dest": "CHI",
+    "date": "2026-03-01",
+    "priceUSD": 195,
+    "durationMin": 2400,
+    "transfers": 1
+  },
+  {
+    "origin": "LAX",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "priceUSD": 175,
+    "durationMin": 2640,
+    "transfers": 0
+  },
+  {
+    "origin": "LAX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "priceUSD": 145,
+    "durationMin": 2100,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "BOS",
+    "date": "2026-02-15",
+    "priceUSD": 89,
+    "durationMin": 215,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "BOS",
+    "date": "2026-02-20",
+    "priceUSD": 79,
+    "durationMin": 215,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "BOS",
+    "date": "2026-03-01",
+    "priceUSD": 95,
+    "durationMin": 215,
+    "transfers": 0
+  },
+  {
+    "origin": "BOS",
+    "dest": "NYP",
+    "date": "2026-02-15",
+    "priceUSD": 89,
+    "durationMin": 215,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "WAS",
+    "date": "2026-02-15",
+    "priceUSD": 125,
+    "durationMin": 180,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "WAS",
+    "date": "2026-02-20",
+    "priceUSD": 115,
+    "durationMin": 180,
+    "transfers": 0
+  },
+  {
+    "origin": "WAS",
+    "dest": "NYP",
+    "date": "2026-02-15",
+    "priceUSD": 125,
+    "durationMin": 180,
+    "transfers": 0
+  },
+  {
+    "origin": "NYP",
+    "dest": "PHL",
+    "date": "2026-02-15",
+    "priceUSD": 65,
+    "durationMin": 75,
+    "transfers": 0
+  },
+  {
+    "origin": "PHL",
+    "dest": "WAS",
+    "date": "2026-02-15",
+    "priceUSD": 85,
+    "durationMin": 105,
+    "transfers": 0
+  },
+  {
+    "origin": "SEA",
+    "dest": "PDX",
+    "date": "2026-02-15",
+    "priceUSD": 35,
+    "durationMin": 210,
+    "transfers": 0
+  },
+  {
+    "origin": "SEA",
+    "dest": "PDX",
+    "date": "2026-02-20",
+    "priceUSD": 32,
+    "durationMin": 210,
+    "transfers": 0
+  },
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "priceUSD": 35,
+    "durationMin": 210,
+    "transfers": 0
+  },
+  {
+    "origin": "CHI",
+    "dest": "DEN",
+    "date": "2026-02-15",
+    "priceUSD": 165,
+    "durationMin": 1110,
+    "transfers": 0
+  },
+  {
+    "origin": "DEN",
+    "dest": "ABQ",
+    "date": "2026-02-15",
+    "priceUSD": 95,
+    "durationMin": 390,
+    "transfers": 0
+  },
+  {
+    "origin": "LAX",
+    "dest": "ABQ",
+    "date": "2026-02-15",
+    "priceUSD": 125,
+    "durationMin": 960,
+    "transfers": 0
+  },
+  {
+    "origin": "CHI",
+    "dest": "NOL",
+    "date": "2026-02-15",
+    "priceUSD": 145,
+    "durationMin": 1170,
+    "transfers": 0
+  },
+  {
+    "origin": "SFO",
+    "dest": "SAC",
+    "date": "2026-02-15",
+    "priceUSD": 32,
+    "durationMin": 120,
+    "transfers": 0
+  },
+  {
+    "origin": "SAC",
+    "dest": "SFO",
+    "date": "2026-02-15",
+    "priceUSD": 32,
+    "durationMin": 120,
+    "transfers": 0
+  }
+]
