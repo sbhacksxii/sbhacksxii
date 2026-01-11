@@ -1157,6 +1157,97 @@
     "priceUSD": 54,
     "durationMin": 565,
     "transfers": 1
+  },
+
+  {
+    "origin": "DEN",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "departureTime": "6:59 PM",
+    "priceUSD": 111,
+    "durationMin": 1120,
+    "transfers": 0
+  },
+
+  {
+    "origin": "DEN",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "departureTime": "6:59 PM",
+    "priceUSD": 124,
+    "durationMin": 1552,
+    "transfers": 1
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "DEN",
+    "date": "2026-02-15",
+    "departureTime": "2:00 PM",
+    "priceUSD": 92,
+    "durationMin": 1136,
+    "transfers": 0
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "DEN",
+    "date": "2026-02-15",
+    "departureTime": "7:40 AM",
+    "priceUSD": 119,
+    "durationMin": 1516,
+    "transfers": 1
+  },
+
+  {
+    "origin": "DEN",
+    "dest": "OMA",
+    "date": "2026-02-15",
+    "departureTime": "6:59 PM",
+    "priceUSD": 74,
+    "durationMin": 535,
+    "transfers": 0
+  },
+
+  {
+    "origin": "OMA",
+    "dest": "DEN",
+    "date": "2026-02-15",
+    "departureTime": "11:25 PM",
+    "priceUSD": 61,
+    "durationMin": 571,
+    "transfers": 0
+  },
+
+  {
+    "origin": "DEN",
+    "dest": "SLC",
+    "date": "2026-02-15",
+    "departureTime": "8:46 AM",
+    "priceUSD": 75,
+    "durationMin": 869,
+    "transfers": 0
+  },
+
+  {
+    "origin": "DEN",
+    "dest": "SLC",
+    "date": "2026-02-15",
+    "departureTime": "8:46 AM",
+    "priceUSD": 75,
+    "durationMin": 869,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SLC",
+    "dest": "DEN",
+    "date": "2026-02-15",
+    "departureTime": "3:20 AM",
+    "priceUSD": 63,
+    "durationMin": 907,
+    "transfers": 0
   }
+
 
 ]
