@@ -391,8 +391,182 @@ function formatTrainResults(trainResults, from, to, departDate, returnDate) {
 }
 
 /**
+ * Build mixed roundtrip itineraries combining one-way options
+ * Creates combinations like: Amtrak outbound + Flight return, Flight outbound + Amtrak return
+ * 
+ * @param {Array} outboundFlights - One-way flights from origin to destination
+ * @param {Array} returnFlights - One-way flights from destination to origin
+ * @param {Array} outboundTrains - One-way Amtrak from origin to destination
+ * @param {Array} returnTrains - One-way Amtrak from destination to origin
+ * @param {string} from - Origin location
+ * @param {string} to - Destination location
+ * @param {string} departDate - Departure date
+ * @param {string} returnDate - Return date
+ * @returns {Array} Array of mixed roundtrip itineraries
+ */
+function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrains, returnTrains, from, to, departDate, returnDate) {
+  const mixedOptions = [];
+  
+  console.log('\n🔀 [MIXED ROUNDTRIP] Building mixed roundtrip options...');
+  console.log(`   Outbound flights: ${outboundFlights?.length || 0}`);
+  console.log(`   Return flights: ${returnFlights?.length || 0}`);
+  console.log(`   Outbound trains: ${outboundTrains?.length || 0}`);
+  console.log(`   Return trains: ${returnTrains?.length || 0}`);
+  
+  // Option 1: Amtrak outbound + Flight return
+  if (outboundTrains && outboundTrains.length > 0 && returnFlights && returnFlights.length > 0) {
+    console.log('   Building: Amtrak outbound + Flight return combinations');
+    
+    // Use top 3 trains and top 3 flights to avoid explosion of combinations
+    const topOutboundTrains = outboundTrains.slice(0, 3);
+    const topReturnFlights = returnFlights.slice(0, 3);
+    
+    for (const train of topOutboundTrains) {
+      for (const flight of topReturnFlights) {
+        const totalPrice = (train.price || 0) + (flight.price || 0);
+        const totalDuration = (train.durationMinutes || 0) + (flight.durationMinutes || 0);
+        
+        mixedOptions.push({
+          type: 'mixed-roundtrip',
+          mixedType: 'amtrak-outbound-flight-return',
+          outbound: {
+            legType: 'train',
+            departure: train.departure,
+            arrival: train.arrival,
+            duration: train.duration,
+            durationMinutes: train.durationMinutes,
+            price: train.price,
+            priceFormatted: train.priceFormatted,
+            provider: train.provider || 'Amtrak',
+            stops: train.stops,
+            date: departDate,
+            source: 'Amtrak'
+          },
+          return: {
+            legType: 'flight',
+            departure: flight.departure,
+            arrival: flight.arrival,
+            duration: flight.duration,
+            durationMinutes: flight.durationMinutes,
+            price: flight.price,
+            priceFormatted: flight.priceFormatted,
+            provider: flight.provider,
+            stops: flight.stops,
+            date: returnDate,
+            source: 'Google Flights'
+          },
+          departure: {
+            location: from,
+            time: train.departure?.time
+          },
+          arrival: {
+            location: to,
+            time: train.arrival?.time
+          },
+          departDate: departDate,
+          returnDate: returnDate,
+          duration: `${formatDuration(totalDuration)} total`,
+          durationMinutes: totalDuration,
+          price: totalPrice,
+          priceFormatted: `$${totalPrice.toFixed(2)}`,
+          currency: 'USD',
+          source: 'Mixed Roundtrip',
+          provider: `${train.provider || 'Amtrak'} + ${flight.provider || 'Flight'}`,
+          stops: `Amtrak outbound, Flight return`,
+          bags: flight.bags
+        });
+      }
+    }
+  }
+  
+  // Option 2: Flight outbound + Amtrak return
+  if (outboundFlights && outboundFlights.length > 0 && returnTrains && returnTrains.length > 0) {
+    console.log('   Building: Flight outbound + Amtrak return combinations');
+    
+    // Use top 3 flights and top 3 trains to avoid explosion of combinations
+    const topOutboundFlights = outboundFlights.slice(0, 3);
+    const topReturnTrains = returnTrains.slice(0, 3);
+    
+    for (const flight of topOutboundFlights) {
+      for (const train of topReturnTrains) {
+        const totalPrice = (flight.price || 0) + (train.price || 0);
+        const totalDuration = (flight.durationMinutes || 0) + (train.durationMinutes || 0);
+        
+        mixedOptions.push({
+          type: 'mixed-roundtrip',
+          mixedType: 'flight-outbound-amtrak-return',
+          outbound: {
+            legType: 'flight',
+            departure: flight.departure,
+            arrival: flight.arrival,
+            duration: flight.duration,
+            durationMinutes: flight.durationMinutes,
+            price: flight.price,
+            priceFormatted: flight.priceFormatted,
+            provider: flight.provider,
+            stops: flight.stops,
+            date: departDate,
+            source: 'Google Flights'
+          },
+          return: {
+            legType: 'train',
+            departure: train.departure,
+            arrival: train.arrival,
+            duration: train.duration,
+            durationMinutes: train.durationMinutes,
+            price: train.price,
+            priceFormatted: train.priceFormatted,
+            provider: train.provider || 'Amtrak',
+            stops: train.stops,
+            date: returnDate,
+            source: 'Amtrak'
+          },
+          departure: {
+            location: from,
+            time: flight.departure?.time
+          },
+          arrival: {
+            location: to,
+            time: flight.arrival?.time
+          },
+          departDate: departDate,
+          returnDate: returnDate,
+          duration: `${formatDuration(totalDuration)} total`,
+          durationMinutes: totalDuration,
+          price: totalPrice,
+          priceFormatted: `$${totalPrice.toFixed(2)}`,
+          currency: 'USD',
+          source: 'Mixed Roundtrip',
+          provider: `${flight.provider || 'Flight'} + ${train.provider || 'Amtrak'}`,
+          stops: `Flight outbound, Amtrak return`,
+          bags: flight.bags
+        });
+      }
+    }
+  }
+  
+  console.log(`   ✅ Built ${mixedOptions.length} mixed roundtrip options`);
+  
+  // Sort by price
+  mixedOptions.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+  
+  return mixedOptions;
+}
+
+/**
  * Search API endpoint
  * POST /api/search
+ * 
+ * For ONE-WAY trips:
+ *   - Gets direct flights and trains
+ *   - Builds multi-modal connections (flight+amtrak, amtrak+flight, flight+flight via hub)
+ * 
+ * For ROUNDTRIP trips:
+ *   - Gets roundtrip flights from Google Flights
+ *   - Builds mixed roundtrip options:
+ *     - Amtrak outbound + Flight return
+ *     - Flight outbound + Amtrak return
+ *   - Does NOT build connections (too much data complexity for roundtrip)
  */
 app.post('/api/search', async (req, res) => {
   try {
@@ -417,6 +591,122 @@ app.post('/api/search', async (req, res) => {
       });
     }
 
+    // Validate roundtrip has return date
+    if (tripType === 'roundtrip' && !returnDate) {
+      return res.status(400).json({
+        error: 'Return date required for roundtrip',
+        required: ['returnDate']
+      });
+    }
+
+    const isRoundtrip = tripType === 'roundtrip' && returnDate;
+    
+    // =====================================================
+    // ROUNDTRIP SEARCH LOGIC
+    // =====================================================
+    if (isRoundtrip) {
+      console.log('\n🔄 [ROUNDTRIP] Processing roundtrip search...');
+      console.log('   Note: Connections are skipped for roundtrip (too much data)');
+      
+      const allResults = [];
+      
+      // Step 1: Get roundtrip flights from Google Flights
+      console.log('\n✈️ [ROUNDTRIP FLIGHTS] Fetching roundtrip flights...');
+      let roundtripFlights = await checkDatabase({ from, to, departDate, returnDate, tripType: 'roundtrip' });
+      
+      if (!roundtripFlights) {
+        console.log('🌐 [SCRAPER] Scraping roundtrip flights...');
+        roundtripFlights = await scrapeGoogleFlights(from, to, departDate, returnDate);
+      }
+      
+      if (roundtripFlights && roundtripFlights.length > 0) {
+        console.log(`✅ Found ${roundtripFlights.length} roundtrip flight options`);
+        allResults.push(...roundtripFlights);
+      }
+      
+      // Step 2: Get one-way Amtrak options (outbound: from→to)
+      console.log('\n🚂 [AMTRAK OUTBOUND] Fetching Amtrak from→to...');
+      let outboundTrains = [];
+      try {
+        const rawOutboundTrains = await getGroupedTrainResults(from, to, 5);
+        if (rawOutboundTrains && rawOutboundTrains.length > 0) {
+          outboundTrains = formatTrainResults(rawOutboundTrains, from, to, departDate, null);
+          console.log(`✅ Found ${outboundTrains.length} outbound Amtrak options`);
+        }
+      } catch (error) {
+        console.error('⚠️ Error fetching outbound trains:', error.message);
+      }
+      
+      // Step 3: Get one-way Amtrak options (return: to→from)
+      console.log('\n🚂 [AMTRAK RETURN] Fetching Amtrak to→from...');
+      let returnTrains = [];
+      try {
+        const rawReturnTrains = await getGroupedTrainResults(to, from, 5);
+        if (rawReturnTrains && rawReturnTrains.length > 0) {
+          returnTrains = formatTrainResults(rawReturnTrains, to, from, returnDate, null);
+          console.log(`✅ Found ${returnTrains.length} return Amtrak options`);
+        }
+      } catch (error) {
+        console.error('⚠️ Error fetching return trains:', error.message);
+      }
+      
+      // Step 4: Get one-way flights for outbound (from→to) if not already included
+      console.log('\n✈️ [OUTBOUND FLIGHTS] Checking for one-way outbound flights...');
+      let outboundFlights = await checkDatabase({ from, to, departDate, returnDate: null, tripType: 'oneway' });
+      
+      if (!outboundFlights) {
+        console.log('🌐 [SCRAPER] Scraping one-way outbound flights...');
+        outboundFlights = await scrapeGoogleFlights(from, to, departDate, null);
+      }
+      console.log(`✅ Found ${outboundFlights?.length || 0} one-way outbound flights`);
+      
+      // Step 5: Get one-way flights for return (to→from)
+      console.log('\n✈️ [RETURN FLIGHTS] Fetching one-way return flights...');
+      let returnFlights = await checkDatabase({ from: to, to: from, departDate: returnDate, returnDate: null, tripType: 'oneway' });
+      
+      if (!returnFlights) {
+        console.log('🌐 [SCRAPER] Scraping one-way return flights...');
+        returnFlights = await scrapeGoogleFlights(to, from, returnDate, null);
+      }
+      console.log(`✅ Found ${returnFlights?.length || 0} one-way return flights`);
+      
+      // Step 6: Build mixed roundtrip options
+      const mixedOptions = buildMixedRoundtripOptions(
+        outboundFlights,
+        returnFlights,
+        outboundTrains,
+        returnTrains,
+        from,
+        to,
+        departDate,
+        returnDate
+      );
+      
+      if (mixedOptions && mixedOptions.length > 0) {
+        allResults.push(...mixedOptions);
+      }
+      
+      // Step 7: Sort all results
+      if (allResults.length > 0) {
+        if (sortBy === 'price') {
+          allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+        } else if (sortBy === 'time') {
+          allResults.sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity));
+        }
+      }
+      
+      console.log(`\n✅ [ROUNDTRIP] Returning ${allResults.length} total results`);
+      console.log(`   - Roundtrip flights: ${roundtripFlights?.length || 0}`);
+      console.log(`   - Mixed roundtrip options: ${mixedOptions?.length || 0}`);
+      
+      return res.json(allResults || []);
+    }
+    
+    // =====================================================
+    // ONE-WAY SEARCH LOGIC (existing behavior)
+    // =====================================================
+    console.log('\n➡️ [ONE-WAY] Processing one-way search...');
+    
     // Step 1: Check database first (placeholder)
     let flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
@@ -428,7 +718,7 @@ app.post('/api/search', async (req, res) => {
         from,
         to,
         departDate,
-        tripType === 'roundtrip' ? returnDate : null
+        null // Always one-way for one-way searches
       );
     }
 
@@ -439,7 +729,7 @@ app.post('/api/search', async (req, res) => {
       const rawTrainResults = await getGroupedTrainResults(from, to, 5); // Get top 5 grouped trains
       
       if (rawTrainResults && rawTrainResults.length > 0) {
-        trainResults = formatTrainResults(rawTrainResults, from, to, departDate, returnDate);
+        trainResults = formatTrainResults(rawTrainResults, from, to, departDate, null);
         console.log(`✅ [TRAINS] Found ${trainResults.length} train options`);
       } else {
         console.log('ℹ️ [TRAINS] No train routes found for this route');
@@ -486,7 +776,7 @@ app.post('/api/search', async (req, res) => {
           from, 
           to, 
           departDate, 
-          returnDate,
+          null, // Always null for one-way
           false // verbose off for production
         );
         console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
