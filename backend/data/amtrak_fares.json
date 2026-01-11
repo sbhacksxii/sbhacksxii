@@ -1247,7 +1247,106 @@
     "priceUSD": 63,
     "durationMin": 907,
     "transfers": 0
-  }
+  }, 
+
+  {
+    "origin": "ABQ",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "11:32 AM",
+    "priceUSD": 88,
+    "durationMin": 1074,
+    "transfers": 0
+  },
+
+  {
+    "origin": "KYC",
+    "dest": "ABQ",
+    "date": "2026-02-15",
+    "departureTime": "10:17 PM",
+    "priceUSD": 88,
+    "durationMin": 1054,
+    "transfers": 0
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "9:50 AM",
+    "priceUSD": 77,
+    "durationMin": 661,
+    "transfers": 0
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "2:25 PM",
+    "priceUSD": 121,
+    "durationMin": 443,
+    "transfers": 0
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "7:15 AM",
+    "priceUSD": 66,
+    "durationMin": 816,
+    "transfers": 1
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "7:40 AM",
+    "priceUSD": 85,
+    "durationMin": 848,
+    "transfers": 1
+  },
+
+  {
+    "origin": "CHI",
+    "dest": "KYC",
+    "date": "2026-02-15",
+    "departureTime": "8:05 PM",
+    "priceUSD": 116,
+    "durationMin": 1065,
+    "transfers": 2
+  },
 
 
+  {
+    "origin": "KYC",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "departureTime": "7:01 AM",
+    "priceUSD": 56,
+    "durationMin": 461,
+    "transfers": 0
+  },
+
+  {
+    "origin": "KYC",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "departureTime": "8:40 AM",
+    "priceUSD": 77,
+    "durationMin": 680,
+    "transfers": 0
+  },
+
+  {
+    "origin": "KYC",
+    "dest": "CHI",
+    "date": "2026-02-15",
+    "departureTime": "4:05 PM",
+    "priceUSD": 116,
+    "durationMin": 1030,
+    "transfers": 2
+  },
 ]
