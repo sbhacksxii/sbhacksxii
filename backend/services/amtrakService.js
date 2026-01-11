@@ -325,7 +325,60 @@ async function findStationCodeByCity(cityName) {
 }
 
 /**
- * Groups similar trains and averages their prices.
+ * Parse time string (e.g., "6:53 AM", "12:40 PM") to minutes since midnight
+ * @param {string} timeStr - Time string in format "H:MM AM/PM"
+ * @returns {number|null} Minutes since midnight, or null if invalid
+ */
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  
+  if (period === 'PM' && hours !== 12) {
+    hours += 12;
+  } else if (period === 'AM' && hours === 12) {
+    hours = 0;
+  }
+  
+  return hours * 60 + minutes;
+}
+
+/**
+ * Convert minutes since midnight to time string (e.g., 413 -> "6:53 AM")
+ * @param {number} minutes - Minutes since midnight
+ * @returns {string} Time string in format "H:MM AM/PM"
+ */
+function minutesToTimeString(minutes) {
+  if (minutes === null || minutes === undefined) return null;
+  
+  let totalMinutes = minutes % (24 * 60); // Handle overflow
+  if (totalMinutes < 0) totalMinutes += 24 * 60;
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  
+  let displayHours = hours;
+  let period = 'AM';
+  
+  if (hours === 0) {
+    displayHours = 12;
+  } else if (hours === 12) {
+    period = 'PM';
+  } else if (hours > 12) {
+    displayHours = hours - 12;
+    period = 'PM';
+  }
+  
+  return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
+ * Groups similar trains and averages their prices and times.
  * Similar trains are those with the same origin, dest, transfers, and similar duration.
  * 
  * @param {Array} fares - Array of fare objects
@@ -351,7 +404,8 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
         transfers: fare.transfers,
         durationMin: fare.durationMin,
         prices: [],
-        dates: []
+        dates: [],
+        departureTimes: [] // Collect departure times
       });
     }
     
@@ -360,6 +414,14 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
     group.dates.push(fare.date);
     // Update duration to average (or keep representative)
     group.durationMin = fare.durationMin;
+    
+    // Collect departure times if available
+    if (fare.departureTime) {
+      const timeInMinutes = parseTimeToMinutes(fare.departureTime);
+      if (timeInMinutes !== null) {
+        group.departureTimes.push(timeInMinutes);
+      }
+    }
   }
   
   // Convert groups to averaged results
@@ -367,6 +429,21 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
     const avgPrice = group.prices.reduce((sum, price) => sum + price, 0) / group.prices.length;
     const minPrice = Math.min(...group.prices);
     const maxPrice = Math.max(...group.prices);
+    
+    // Calculate average departure time
+    let avgDepartureTime = null;
+    let avgDepartureTimeMinutes = null;
+    if (group.departureTimes.length > 0) {
+      // Handle circular time (e.g., average of 11 PM and 1 AM should be midnight, not 12 PM)
+      // Convert to complex plane to handle wrap-around, then average
+      const timesInRadians = group.departureTimes.map(min => (min / (24 * 60)) * 2 * Math.PI);
+      const avgCos = timesInRadians.reduce((sum, r) => sum + Math.cos(r), 0) / timesInRadians.length;
+      const avgSin = timesInRadians.reduce((sum, r) => sum + Math.sin(r), 0) / timesInRadians.length;
+      const avgAngle = Math.atan2(avgSin, avgCos);
+      avgDepartureTimeMinutes = Math.round((avgAngle / (2 * Math.PI)) * 24 * 60);
+      if (avgDepartureTimeMinutes < 0) avgDepartureTimeMinutes += 24 * 60;
+      avgDepartureTime = minutesToTimeString(avgDepartureTimeMinutes);
+    }
     
     return {
       origin: group.origin,
@@ -377,7 +454,9 @@ function groupAndAverageTrains(fares, maxResults = 5, durationTolerance = 30) {
       minPriceUSD: minPrice,
       maxPriceUSD: maxPrice,
       sampleCount: group.prices.length,
-      dates: group.dates
+      dates: group.dates,
+      departureTime: avgDepartureTime,
+      departureTimeMinutes: avgDepartureTimeMinutes
     };
   });
   

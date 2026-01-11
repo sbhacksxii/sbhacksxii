@@ -101,6 +101,35 @@ function formatDuration(minutes) {
 }
 
 /**
+ * Convert minutes since midnight to time string (e.g., 413 -> "06:53 AM")
+ * @param {number} minutes - Minutes since midnight
+ * @returns {string} Time string in format "HH:MM AM/PM"
+ */
+function minutesToTimeString(minutes) {
+  if (minutes === null || minutes === undefined) return null;
+  
+  let totalMinutes = minutes % (24 * 60); // Handle overflow
+  if (totalMinutes < 0) totalMinutes += 24 * 60;
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  
+  let displayHours = hours;
+  let period = 'AM';
+  
+  if (hours === 0) {
+    displayHours = 12;
+  } else if (hours === 12) {
+    period = 'PM';
+  } else if (hours > 12) {
+    displayHours = hours - 12;
+    period = 'PM';
+  }
+  
+  return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
  * Format train results to match flight result structure
  * @param {Array} trainResults - Array of grouped train results
  * @param {string} from - Origin city name
@@ -114,15 +143,24 @@ function formatTrainResults(trainResults, from, to, departDate, returnDate) {
     const stopsText = train.transfers === 0 ? 'Nonstop' : `${train.transfers} transfer${train.transfers > 1 ? 's' : ''}`;
     const priceFormatted = `$${train.priceUSD.toFixed(2)}`;
     
+    // Calculate arrival time from departure time and duration
+    let departureTime = train.departureTime || null;
+    let arrivalTime = null;
+    
+    if (train.departureTimeMinutes !== null && train.departureTimeMinutes !== undefined && train.durationMin) {
+      const arrivalMinutes = train.departureTimeMinutes + train.durationMin;
+      arrivalTime = minutesToTimeString(arrivalMinutes);
+    }
+    
     return {
       type: returnDate ? 'roundtrip' : 'oneway',
       departure: {
         location: from,
-        time: null // Train data doesn't have specific times
+        time: departureTime
       },
       arrival: {
         location: to,
-        time: null // Train data doesn't have specific times
+        time: arrivalTime
       },
       duration: formatDuration(train.durationMin),
       departDate: departDate,
