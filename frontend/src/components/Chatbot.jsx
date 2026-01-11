@@ -23,33 +23,47 @@ function Chatbot() {
     e.preventDefault()
     if (!input.trim() || loading) return
 
-    const userMessage = { role: 'user', content: input }
+    const userMessageText = input.trim()
+    const userMessage = { role: 'user', content: userMessageText }
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
 
     try {
-      // TODO: Replace with actual chatbot API call
-      const response = await fetch('/api/chat', {
+      // Determine API URL - use proxy in dev, full URL in production
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      const apiUrl = isProduction 
+        ? (import.meta.env.VITE_API_URL || 'https://sbhacksxii-production.up.railway.app')
+        : '' // Empty string uses Vite proxy in development
+      
+      const requestUrl = `${apiUrl}/api/chat`
+      console.log('Chatbot: Sending request to:', requestUrl)
+      
+      const response = await fetch(requestUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: userMessageText })
       })
 
+      console.log('Chatbot: Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to get chatbot response')
+        const errorText = await response.text()
+        console.error('Chatbot: Error response:', errorText)
+        throw new Error(`Failed to get chatbot response: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('Chatbot: Received data:', data)
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
     } catch (err) {
+      console.error('Chatbot error:', err)
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again later.'
+        content: `Sorry, I encountered an error: ${err.message}. Please try again later.`
       }])
-      console.error('Chatbot error:', err)
     } finally {
       setLoading(false)
     }
