@@ -59,10 +59,11 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
     )
   }
 
-  // Count flights, trains, and connections
+  // Count flights, trains, connections, and mixed roundtrips
   const flights = results.filter(r => r.source === 'Google Flights')
   const trains = results.filter(r => r.source === 'Amtrak')
   const connections = results.filter(r => r.type === 'connection' || r.source === 'Connection')
+  const mixedRoundtrips = results.filter(r => r.type === 'mixed-roundtrip')
 
   const formatPrice = (price, currency = 'USD') => {
     if (!price) return 'N/A'
@@ -102,13 +103,15 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
             <h2 className="text-xl font-semibold text-gray-800">
               {results.length} travel option{results.length !== 1 ? 's' : ''} found
             </h2>
-            {(flights.length > 0 || trains.length > 0 || connections.length > 0) && (
+            {(flights.length > 0 || trains.length > 0 || connections.length > 0 || mixedRoundtrips.length > 0) && (
               <p className="text-sm text-gray-500 mt-1">
                 {flights.length > 0 && `${flights.length} flight${flights.length !== 1 ? 's' : ''}`}
-                {flights.length > 0 && (trains.length > 0 || connections.length > 0) && ' • '}
+                {flights.length > 0 && (trains.length > 0 || connections.length > 0 || mixedRoundtrips.length > 0) && ' • '}
                 {trains.length > 0 && `${trains.length} bus/train route${trains.length !== 1 ? 's' : ''}`}
-                {trains.length > 0 && connections.length > 0 && ' • '}
+                {trains.length > 0 && (connections.length > 0 || mixedRoundtrips.length > 0) && ' • '}
                 {connections.length > 0 && `${connections.length} connection${connections.length !== 1 ? 's' : ''}`}
+                {connections.length > 0 && mixedRoundtrips.length > 0 && ' • '}
+                {mixedRoundtrips.length > 0 && `${mixedRoundtrips.length} mixed roundtrip${mixedRoundtrips.length !== 1 ? 's' : ''}`}
               </p>
             )}
           </div>
@@ -134,6 +137,188 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
           const isTrain = result.source === 'Amtrak'
           const isFlight = result.source === 'Google Flights'
           const isConnection = result.type === 'connection' || result.source === 'Connection'
+          const isMixedRoundtrip = result.type === 'mixed-roundtrip'
+          
+          // Render mixed roundtrip (Amtrak+Flight or Flight+Amtrak)
+          if (isMixedRoundtrip) {
+            return (
+              <div
+                key={index}
+                className={`bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${
+                  isTopResult ? 'ring-2 ring-indigo-500' : ''
+                } border-l-4 border-teal-500`}
+              >
+                {isTopResult && (
+                  <div className="bg-indigo-500 text-white text-xs font-medium px-3 py-1">
+                    {sortBy === 'price' ? '💰 Best Price' : '⚡ Fastest'}
+                  </div>
+                )}
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    {/* Left: Travel Info */}
+                    <div className="flex-1">
+                      {/* Provider/Transport Type */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl">🔀</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-800">
+                            {result.provider || 'Mixed Roundtrip'}
+                          </span>
+                          <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full font-medium">
+                            Mixed Roundtrip
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Outbound Leg */}
+                      <div className="space-y-3">
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {result.outbound?.legType === 'train' ? '🚂 Outbound (Train)' : '✈️ Outbound (Flight)'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {result.departDate}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-center min-w-[70px]">
+                              <p className="text-lg font-bold text-gray-900">
+                                {result.outbound?.departure?.time || '--:--'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {result.outbound?.departure?.location || searchParams?.from}
+                              </p>
+                            </div>
+                            
+                            <div className="flex-1 flex items-center px-2">
+                              <div className={`flex-1 border-t-2 ${result.outbound?.legType === 'train' ? 'border-blue-300' : 'border-gray-300 border-dashed'} relative`}>
+                                <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${result.outbound?.legType === 'train' ? 'bg-blue-400' : 'bg-gray-400'} rounded-full`}></div>
+                                <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${result.outbound?.legType === 'train' ? 'bg-blue-500' : 'bg-indigo-500'} rounded-full`}></div>
+                                <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-xs text-gray-500 whitespace-nowrap">
+                                  {result.outbound?.duration || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-center min-w-[70px]">
+                              <p className="text-lg font-bold text-gray-900">
+                                {result.outbound?.arrival?.time || '--:--'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {result.outbound?.arrival?.location || searchParams?.to}
+                              </p>
+                            </div>
+                            
+                            <div className="text-right min-w-[60px]">
+                              <p className={`text-sm font-semibold ${result.outbound?.legType === 'train' ? 'text-blue-600' : 'text-indigo-600'}`}>
+                                {result.outbound?.priceFormatted || formatPrice(result.outbound?.price)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Return Leg */}
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {result.return?.legType === 'train' ? '🚂 Return (Train)' : '✈️ Return (Flight)'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {result.returnDate}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-center min-w-[70px]">
+                              <p className="text-lg font-bold text-gray-900">
+                                {result.return?.departure?.time || '--:--'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {result.return?.departure?.location || searchParams?.to}
+                              </p>
+                            </div>
+                            
+                            <div className="flex-1 flex items-center px-2">
+                              <div className={`flex-1 border-t-2 ${result.return?.legType === 'train' ? 'border-blue-300' : 'border-gray-300 border-dashed'} relative`}>
+                                <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 ${result.return?.legType === 'train' ? 'bg-blue-400' : 'bg-gray-400'} rounded-full`}></div>
+                                <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 ${result.return?.legType === 'train' ? 'bg-blue-500' : 'bg-indigo-500'} rounded-full`}></div>
+                                <div className="absolute left-1/2 -translate-x-1/2 -top-5 text-xs text-gray-500 whitespace-nowrap">
+                                  {result.return?.duration || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-center min-w-[70px]">
+                              <p className="text-lg font-bold text-gray-900">
+                                {result.return?.arrival?.time || '--:--'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {result.return?.arrival?.location || searchParams?.from}
+                              </p>
+                            </div>
+                            
+                            <div className="text-right min-w-[60px]">
+                              <p className={`text-sm font-semibold ${result.return?.legType === 'train' ? 'text-blue-600' : 'text-indigo-600'}`}>
+                                {result.return?.priceFormatted || formatPrice(result.return?.price)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Total Duration */}
+                      <div className="mt-3 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-600">
+                          Total travel time: <span className="font-semibold">{result.duration || 'N/A'}</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Right: Total Price */}
+                    <div className="ml-6 text-right border-l pl-6 border-gray-200">
+                      <p className="text-2xl font-bold text-teal-600">
+                        {formatPrice(result.price, result.currency)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        total roundtrip
+                      </p>
+                      <div className="mt-3 space-y-1">
+                        {result.outbound?.source === 'Amtrak' && (
+                          <a 
+                            href="https://www.amtrak.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                          >
+                            Book Outbound on Amtrak
+                          </a>
+                        )}
+                        {result.return?.source === 'Amtrak' && (
+                          <a 
+                            href="https://www.amtrak.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                          >
+                            Book Return on Amtrak
+                          </a>
+                        )}
+                        {(result.outbound?.source === 'Google Flights' || result.return?.source === 'Google Flights') && (
+                          <button 
+                            onClick={handleGoogleFlightsClick}
+                            className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
+                          >
+                            View Flights
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
           
           // Render connection differently
           if (isConnection) {
