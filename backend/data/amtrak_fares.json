@@ -977,6 +977,186 @@
     "priceUSD": 146,
     "durationMin": 411,
     "transfers": 1
-}
+},
+
+{
+  "origin": "SEA",
+  "dest": "PDX",
+  "date": "2026-02-15",
+  "departureTime": "2:20 PM",
+  "priceUSD": 43,
+  "durationMin": 205,
+  "transfers": 0
+},
+
+{
+  "origin": "SEA",
+  "dest": "PDX",
+  "date": "2026-02-15",
+  "departureTime": "5:40 PM",
+  "priceUSD": 34,
+  "durationMin": 205,
+  "transfers": 0
+},
+
+  {
+    "origin": "SEA",
+    "dest": "PDX",
+    "date": "2026-02-15",
+    "departureTime": "7:50 PM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "6:53 AM",
+    "priceUSD": 44,
+    "durationMin": 374,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "8:49 AM",
+    "priceUSD": 44,
+    "durationMin": 378,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "12:40 PM",
+    "priceUSD": 44,
+    "durationMin": 387,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "4:40 PM",
+    "priceUSD": 44,
+    "durationMin": 387,
+    "transfers": 0
+  },
+  
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "6:50 PM",
+    "priceUSD": 44,
+    "durationMin": 374,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "12:21 PM",
+    "priceUSD": 102,
+    "durationMin": 763,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "6:19 PM",
+    "priceUSD": 80,
+    "durationMin": 405,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "6:19 PM",
+    "priceUSD": 58,
+    "durationMin": 676,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SAN",
+    "date": "2026-02-15",
+    "departureTime": "9:30 PM",
+    "priceUSD": 50,
+    "durationMin": 485,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "4:01 AM",
+    "priceUSD": 44,
+    "durationMin": 354,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "6:01 AM",
+    "priceUSD": 44,
+    "durationMin": 346,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "8:01 AM",
+    "priceUSD": 44,
+    "durationMin": 345,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "12:01 PM",
+    "priceUSD": 44,
+    "durationMin": 344,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "4:01 PM",
+    "priceUSD": 44,
+    "durationMin": 358,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SAN",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "10:10 PM",
+    "priceUSD": 54,
+    "durationMin": 565,
+    "transfers": 1
+  }
 
 ]
