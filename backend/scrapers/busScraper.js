@@ -257,10 +257,13 @@ export async function scrapeGreyhoundBuses(from, to, departDate) {
   
   let browser;
   try {
+    // Set headless: false to see the browser window for debugging
+    // Change to 'new' for production (headless mode)
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: false,  // 👈 VISIBLE BROWSER FOR DEBUGGING
       executablePath: executablePath,
       defaultViewport: { width: 1280, height: 900 },
+      slowMo: 100,  // 👈 Slow down actions by 100ms so you can see what's happening
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -268,7 +271,8 @@ export async function scrapeGreyhoundBuses(from, to, departDate) {
         '--disable-gpu',
         '--disable-software-rasterizer',
         '--disable-web-security',
-        '--allow-running-insecure-content'
+        '--allow-running-insecure-content',
+        '--start-maximized'  // 👈 Start with maximized window
       ]
     });
     console.log('✅ Browser launched successfully');
@@ -299,6 +303,7 @@ export async function scrapeGreyhoundBuses(from, to, departDate) {
     
     // Wait for page to load and any dynamic content
     console.log('⏳ Waiting for page content to load...');
+    console.log('   (Watch the browser window to see what happens)');
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     // Take a screenshot for debugging
@@ -312,7 +317,29 @@ export async function scrapeGreyhoundBuses(from, to, departDate) {
     const currentUrl = page.url();
     console.log(`📍 Current URL: ${currentUrl}`);
     
+    // Log what elements we can find on the page
+    console.log('\n🔍 Looking for trip cards on the page...');
+    const elementCounts = await page.evaluate(() => {
+      const selectors = {
+        '[data-e2e="search-result-card"]': document.querySelectorAll('[data-e2e="search-result-card"]').length,
+        '[class*="SearchResult"]': document.querySelectorAll('[class*="SearchResult"]').length,
+        '[class*="TripCard"]': document.querySelectorAll('[class*="TripCard"]').length,
+        '[class*="ride-item"]': document.querySelectorAll('[class*="ride-item"]').length,
+        '.search-result-card': document.querySelectorAll('.search-result-card').length,
+        'li[class*="result"]': document.querySelectorAll('li[class*="result"]').length,
+        // Also check for prices and times on the page
+        'elements with $ sign': document.body.innerText.match(/\$\d+/g)?.length || 0,
+        'elements with time pattern': document.body.innerText.match(/\d{1,2}:\d{2}/g)?.length || 0
+      };
+      return selectors;
+    });
+    console.log('   Element counts found:');
+    for (const [selector, count] of Object.entries(elementCounts)) {
+      console.log(`   - ${selector}: ${count}`);
+    }
+    
     // Extract bus data
+    console.log('\n🚌 Attempting to extract bus data...');
     const rawBuses = await extractBusData(page);
     console.log(`\n📊 Found ${rawBuses.length} bus results\n`);
     
@@ -327,6 +354,11 @@ export async function scrapeGreyhoundBuses(from, to, departDate) {
       const bodyText = await page.evaluate(() => document.body?.innerText?.substring(0, 500) || 'No body content');
       console.log('\n📝 Page content preview:');
       console.log(bodyText);
+      
+      // 👇 PAUSE FOR DEBUGGING - gives you 30 seconds to inspect the browser
+      console.log('\n⏸️  PAUSING FOR 30 SECONDS - Inspect the browser window...');
+      console.log('   Press Ctrl+C to stop early if needed.\n');
+      await new Promise(resolve => setTimeout(resolve, 30000));
     }
     
     // Load existing fares data
