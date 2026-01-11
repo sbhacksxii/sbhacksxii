@@ -29,38 +29,210 @@ let stationsData = null;
 // =====================================================
 // MAJOR HUB AIRPORTS FOR FLIGHT CONNECTIONS
 // Based on hubs.md - major airports for connecting flights
+// Includes lat/lon for geographic corridor filtering
 // =====================================================
 const MAJOR_HUB_AIRPORTS = [
-  { code: 'LAX', city: 'Los Angeles', state: 'CA' },
-  { code: 'SFO', city: 'San Francisco', state: 'CA' },
-  { code: 'OAK', city: 'Oakland', state: 'CA' },
-  { code: 'SJC', city: 'San Jose', state: 'CA' },
-  { code: 'SAN', city: 'San Diego', state: 'CA' },
-  { code: 'DEN', city: 'Denver', state: 'CO' },
-  { code: 'SLC', city: 'Salt Lake City', state: 'UT' },
-  { code: 'SEA', city: 'Seattle', state: 'WA' },
-  { code: 'PDX', city: 'Portland', state: 'OR' },
-  { code: 'ORD', city: 'Chicago', state: 'IL' },
-  { code: 'DFW', city: 'Dallas', state: 'TX' },
-  { code: 'AUS', city: 'Austin', state: 'TX' },
-  { code: 'IAH', city: 'Houston', state: 'TX' },
-  { code: 'MSY', city: 'New Orleans', state: 'LA' },
-  { code: 'ATL', city: 'Atlanta', state: 'GA' },
-  { code: 'JFK', city: 'New York', state: 'NY' },
-  { code: 'LGA', city: 'New York', state: 'NY' },
-  { code: 'EWR', city: 'Newark', state: 'NJ' },
-  { code: 'BOS', city: 'Boston', state: 'MA' },
-  { code: 'DCA', city: 'Washington DC', state: 'DC' },
-  { code: 'IAD', city: 'Washington DC', state: 'VA' },
-  { code: 'PHX', city: 'Phoenix', state: 'AZ' },
-  { code: 'LAS', city: 'Las Vegas', state: 'NV' },
-  { code: 'MIA', city: 'Miami', state: 'FL' },
-  { code: 'MCO', city: 'Orlando', state: 'FL' },
-  { code: 'MSP', city: 'Minneapolis', state: 'MN' },
-  { code: 'DTW', city: 'Detroit', state: 'MI' },
-  { code: 'CLT', city: 'Charlotte', state: 'NC' },
-  { code: 'PHL', city: 'Philadelphia', state: 'PA' }
+  { code: 'LAX', city: 'Los Angeles', state: 'CA', lat: 33.9425, lon: -118.4081 },
+  { code: 'SBA', city: 'Santa Barbara', state: 'CA', lat: 34.4262, lon: -119.8402 },
+  { code: 'SFO', city: 'San Francisco', state: 'CA', lat: 37.6213, lon: -122.3790 },
+  { code: 'OAK', city: 'Oakland', state: 'CA', lat: 37.7213, lon: -122.2208 },
+  { code: 'SJC', city: 'San Jose', state: 'CA', lat: 37.3639, lon: -121.9289 },
+  { code: 'SAN', city: 'San Diego', state: 'CA', lat: 32.7336, lon: -117.1897 },
+  { code: 'DEN', city: 'Denver', state: 'CO', lat: 39.8561, lon: -104.6737 },
+  { code: 'SLC', city: 'Salt Lake City', state: 'UT', lat: 40.7884, lon: -111.9778 },
+  { code: 'SEA', city: 'Seattle', state: 'WA', lat: 47.4502, lon: -122.3088 },
+  { code: 'PDX', city: 'Portland', state: 'OR', lat: 45.5898, lon: -122.5951 },
+  { code: 'ORD', city: 'Chicago', state: 'IL', lat: 41.9742, lon: -87.9073 },
+  { code: 'DFW', city: 'Dallas', state: 'TX', lat: 32.8998, lon: -97.0403 },
+  { code: 'AUS', city: 'Austin', state: 'TX', lat: 30.1975, lon: -97.6664 },
+  { code: 'IAH', city: 'Houston', state: 'TX', lat: 29.9902, lon: -95.3368 },
+  { code: 'MSY', city: 'New Orleans', state: 'LA', lat: 29.9934, lon: -90.2580 },
+  { code: 'ATL', city: 'Atlanta', state: 'GA', lat: 33.6407, lon: -84.4277 },
+  { code: 'JFK', city: 'New York', state: 'NY', lat: 40.6413, lon: -73.7781 },
+  { code: 'LGA', city: 'New York', state: 'NY', lat: 40.7769, lon: -73.8740 },
+  { code: 'EWR', city: 'Newark', state: 'NJ', lat: 40.6895, lon: -74.1745 },
+  { code: 'BOS', city: 'Boston', state: 'MA', lat: 42.3656, lon: -71.0096 },
+  { code: 'DCA', city: 'Washington DC', state: 'DC', lat: 38.8512, lon: -77.0402 },
+  { code: 'IAD', city: 'Washington DC', state: 'VA', lat: 38.9531, lon: -77.4565 },
+  { code: 'PHX', city: 'Phoenix', state: 'AZ', lat: 33.4373, lon: -112.0078 },
+  { code: 'LAS', city: 'Las Vegas', state: 'NV', lat: 36.0840, lon: -115.1537 },
+  { code: 'MIA', city: 'Miami', state: 'FL', lat: 25.7959, lon: -80.2870 },
+  { code: 'MCO', city: 'Orlando', state: 'FL', lat: 28.4312, lon: -81.3081 },
+  { code: 'MSP', city: 'Minneapolis', state: 'MN', lat: 44.8848, lon: -93.2223 },
+  { code: 'DTW', city: 'Detroit', state: 'MI', lat: 42.2124, lon: -83.3534 },
+  { code: 'CLT', city: 'Charlotte', state: 'NC', lat: 35.2140, lon: -80.9431 },
+  { code: 'PHL', city: 'Philadelphia', state: 'PA', lat: 39.8729, lon: -75.2437 }
 ];
+
+// =====================================================
+// GEOGRAPHIC CORRIDOR UTILITIES
+// Used to filter hub airports that lie within a corridor
+// between origin and destination
+// =====================================================
+
+// Default corridor width in miles (distance from center line on each side)
+// 200 miles = ~320 km corridor width on each side
+const DEFAULT_CORRIDOR_WIDTH_MILES = 100;
+
+/**
+ * Convert degrees to radians
+ */
+function toRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+/**
+ * Convert radians to degrees
+ */
+function toDegrees(radians) {
+  return radians * (180 / Math.PI);
+}
+
+/**
+ * Calculate the Haversine distance between two points in miles
+ * @param {number} lat1 - Latitude of point 1
+ * @param {number} lon1 - Longitude of point 1
+ * @param {number} lat2 - Latitude of point 2
+ * @param {number} lon2 - Longitude of point 2
+ * @returns {number} Distance in miles
+ */
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 3959; // Earth's radius in miles
+  
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+  return R * c;
+}
+
+/**
+ * Calculate the perpendicular distance from a point to a great circle line
+ * (simplified using cross-track distance formula)
+ * @param {number} pointLat - Point latitude
+ * @param {number} pointLon - Point longitude
+ * @param {number} startLat - Line start latitude
+ * @param {number} startLon - Line start longitude
+ * @param {number} endLat - Line end latitude
+ * @param {number} endLon - Line end longitude
+ * @returns {number} Distance in miles from point to line
+ */
+function distanceToGreatCircle(pointLat, pointLon, startLat, startLon, endLat, endLon) {
+  const R = 3959; // Earth's radius in miles
+  
+  // Convert to radians
+  const lat1 = toRadians(startLat);
+  const lon1 = toRadians(startLon);
+  const lat2 = toRadians(endLat);
+  const lon2 = toRadians(endLon);
+  const lat3 = toRadians(pointLat);
+  const lon3 = toRadians(pointLon);
+  
+  // Distance from start to point (angular)
+  const d13 = haversineDistance(startLat, startLon, pointLat, pointLon) / R;
+  
+  // Initial bearing from start to end
+  const theta12 = Math.atan2(
+    Math.sin(lon2 - lon1) * Math.cos(lat2),
+    Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1)
+  );
+  
+  // Initial bearing from start to point
+  const theta13 = Math.atan2(
+    Math.sin(lon3 - lon1) * Math.cos(lat3),
+    Math.cos(lat1) * Math.sin(lat3) - Math.sin(lat1) * Math.cos(lat3) * Math.cos(lon3 - lon1)
+  );
+  
+  // Cross-track distance (perpendicular distance)
+  const dxt = Math.asin(Math.sin(d13) * Math.sin(theta13 - theta12));
+  
+  return Math.abs(dxt * R);
+}
+
+/**
+ * Check if a hub airport lies within the corridor between origin and destination
+ * Also checks that the hub is "between" the origin and destination (not past either end)
+ * @param {Object} hub - Hub airport object with lat/lon
+ * @param {number} originLat - Origin latitude
+ * @param {number} originLon - Origin longitude
+ * @param {number} destLat - Destination latitude
+ * @param {number} destLon - Destination longitude
+ * @param {number} corridorWidthMiles - Width of corridor on each side of center line
+ * @returns {boolean} True if hub is within corridor
+ */
+function isHubInCorridor(hub, originLat, originLon, destLat, destLon, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
+  if (!hub.lat || !hub.lon) return false;
+  
+  // Calculate perpendicular distance from hub to the direct path
+  const perpDistance = distanceToGreatCircle(
+    hub.lat, hub.lon,
+    originLat, originLon,
+    destLat, destLon
+  );
+  
+  // Check if within corridor width
+  if (perpDistance > corridorWidthMiles) return false;
+  
+  // Also check that hub is "between" origin and destination (along-track check)
+  // Calculate distances
+  const originToDest = haversineDistance(originLat, originLon, destLat, destLon);
+  const originToHub = haversineDistance(originLat, originLon, hub.lat, hub.lon);
+  const hubToDest = haversineDistance(hub.lat, hub.lon, destLat, destLon);
+  
+  // Hub should be between origin and destination (with some tolerance)
+  // Allow hubs slightly past origin/dest (10% buffer) for edge cases
+  const buffer = originToDest * 0.1;
+  const maxDistance = originToDest + buffer;
+  
+  // The sum of distances from origin->hub and hub->dest should be close to origin->dest
+  // if the hub is roughly "between" them
+  return (originToHub + hubToDest) <= maxDistance * 1.3; // 30% tolerance for non-direct paths
+}
+
+/**
+ * Get hub airports that lie within the geographic corridor between two locations
+ * @param {string} originCode - Origin airport code
+ * @param {string} destCode - Destination airport code
+ * @param {number} corridorWidthMiles - Width of corridor in miles
+ * @returns {Array} Array of hub airports within the corridor
+ */
+function getHubsInCorridor(originCode, destCode, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
+  // Find origin and destination coordinates
+  const origin = MAJOR_HUB_AIRPORTS.find(h => h.code.toUpperCase() === originCode.toUpperCase());
+  const dest = MAJOR_HUB_AIRPORTS.find(h => h.code.toUpperCase() === destCode.toUpperCase());
+  
+  // If we don't have coordinates for origin or dest, we can't filter
+  // In this case, return all hubs except origin/dest
+  if (!origin?.lat || !dest?.lat) {
+    console.log(`   ⚠️ Geographic filtering skipped - missing coordinates for ${!origin?.lat ? originCode : destCode}`);
+    return MAJOR_HUB_AIRPORTS.filter(h => 
+      h.code.toUpperCase() !== originCode.toUpperCase() && 
+      h.code.toUpperCase() !== destCode.toUpperCase()
+    );
+  }
+  
+  const hubsInCorridor = [];
+  
+  for (const hub of MAJOR_HUB_AIRPORTS) {
+    // Skip origin and destination
+    if (hub.code.toUpperCase() === originCode.toUpperCase() || 
+        hub.code.toUpperCase() === destCode.toUpperCase()) {
+      continue;
+    }
+    
+    // Check if hub is in corridor
+    if (isHubInCorridor(hub, origin.lat, origin.lon, dest.lat, dest.lon, corridorWidthMiles)) {
+      hubsInCorridor.push(hub);
+    }
+  }
+  
+  return hubsInCorridor;
+}
 
 // =====================================================
 // AIRPORT CODE TO AMTRAK STATION CODE MAPPING
@@ -940,16 +1112,22 @@ function buildFlightConnectionItinerary(leg1, leg2, hubCity, departDate, returnD
  * Find flight → flight connections via major hub airports
  * User flies to a major hub, then connects to another flight to reach destination
  * 
+ * Uses geographic corridor filtering to only consider hubs that lie within
+ * a corridor between origin and destination (reduces search space significantly)
+ * 
  * @param {Array} flightResults - Available flight results from scraper/database
  * @param {string} userOrigin - User's origin city/airport
  * @param {string} userDest - User's destination city/airport
  * @param {string} departDate - Departure date
- * @param {string|null} returnDate - Return date
+ * @param {number} corridorWidthMiles - Width of corridor in miles (default 200)
  * @param {boolean} verbose - Whether to log verbose output
- * @returns {Array} Array of flight connection itineraries
+ * @returns {Array} Array of flight connection itineraries (always one-way)
  */
-function findFlightToFlightConnections(flightResults, userOrigin, userDest, departDate, returnDate = null, verbose = false) {
+function findFlightToFlightConnections(flightResults, userOrigin, userDest, departDate, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES, verbose = false) {
   const connections = [];
+  
+  const normalizedOrigin = userOrigin.toUpperCase().trim();
+  const normalizedDest = userDest.toUpperCase().trim();
   
   if (verbose) {
     console.log('\n' + '='.repeat(60));
@@ -957,6 +1135,7 @@ function findFlightToFlightConnections(flightResults, userOrigin, userDest, depa
     console.log('='.repeat(60));
     console.log(`   User Origin: ${userOrigin}`);
     console.log(`   User Destination: ${userDest}`);
+    console.log(`   Corridor Width: ${corridorWidthMiles} miles`);
   }
   
   if (!flightResults || flightResults.length === 0) {
@@ -964,19 +1143,36 @@ function findFlightToFlightConnections(flightResults, userOrigin, userDest, depa
     return connections;
   }
   
-  const hubCodes = getMajorHubCodes();
-  const normalizedOrigin = userOrigin.toUpperCase().trim();
-  const normalizedDest = userDest.toUpperCase().trim();
+  // Get only hubs within the geographic corridor
+  const hubsInCorridor = getHubsInCorridor(normalizedOrigin, normalizedDest, corridorWidthMiles);
+  const hubCodes = hubsInCorridor.map(h => h.code);
   
   if (verbose) {
-    console.log(`\n📍 Major hub airports available: ${hubCodes.length}`);
+    console.log(`\n📍 Hubs within ${corridorWidthMiles}-mile corridor: ${hubCodes.length}`);
+    if (hubCodes.length > 0) {
+      console.log(`   ${hubCodes.join(', ')}`);
+    }
+  }
+  
+  if (hubCodes.length === 0) {
+    if (verbose) console.log('   ⚠️ No hubs in corridor - skipping flight-to-flight connections');
+    return connections;
+  }
+  
+  // Filter to only one-way flights for connections
+  const onewayFlights = flightResults.filter(f => 
+    f.type === 'oneway' || !f.returnDate
+  );
+  
+  if (verbose) {
+    console.log(`   One-way flights available: ${onewayFlights.length} of ${flightResults.length}`);
   }
   
   // Group flights by their departure and arrival locations for faster lookup
   const flightsByDeparture = new Map();
   const flightsByArrival = new Map();
   
-  for (const flight of flightResults) {
+  for (const flight of onewayFlights) {
     const depLoc = flight.departure?.location?.toUpperCase().trim();
     const arrLoc = flight.arrival?.location?.toUpperCase().trim();
     
@@ -995,13 +1191,8 @@ function findFlightToFlightConnections(flightResults, userOrigin, userDest, depa
     }
   }
   
-  // For each hub, check if we can connect through it
+  // For each hub in the corridor, check if we can connect through it
   for (const hubCode of hubCodes) {
-    // Skip if hub is origin or destination
-    if (hubCode === normalizedOrigin || hubCode === normalizedDest) {
-      continue;
-    }
-    
     // Find flights FROM origin TO hub
     const flightsToHub = (flightsByArrival.get(hubCode) || []).filter(f => 
       f.departure?.location?.toUpperCase().trim() === normalizedOrigin
@@ -1047,9 +1238,9 @@ function findFlightToFlightConnections(flightResults, userOrigin, userDest, depa
             console.log(`      Wait time: ${formatDuration(waitTime)}`);
           }
           
-          // Build the connection itinerary
+          // Build the connection itinerary (always one-way for connections)
           const connection = buildFlightConnectionItinerary(
-            flight1, flight2, hubCode, departDate, returnDate
+            flight1, flight2, hubCode, departDate, null // Always null returnDate for connections
           );
           
           connections.push(connection);
@@ -1070,16 +1261,20 @@ function findFlightToFlightConnections(flightResults, userOrigin, userDest, depa
 /**
  * Main function to build all connections
  * 
+ * NOTE: Connections are ALWAYS one-way. Even for round-trip searches,
+ * connections only use one-way flight data to build outbound itineraries.
+ * 
  * @param {Array} flightResults - Flight results from scraper/database
  * @param {Array} trainResults - Train results (not used directly, but kept for API compatibility)
  * @param {string} origin - User's origin
  * @param {string} destination - User's destination
  * @param {string} departDate - Departure date
- * @param {string|null} returnDate - Return date
+ * @param {string|null} returnDate - Return date (kept for API compatibility, not used in connections)
  * @param {boolean} verbose - Whether to log verbose output
+ * @param {number} corridorWidthMiles - Width of corridor for flight-flight connections (default 200)
  * @returns {Promise<Array>} All connection itineraries
  */
-export async function buildConnections(flightResults, trainResults, origin, destination, departDate, returnDate = null, verbose = false) {
+export async function buildConnections(flightResults, trainResults, origin, destination, departDate, returnDate = null, verbose = false, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
   if (verbose) {
     console.log('\n' + '═'.repeat(70));
     console.log('🔗 CONNECTION SERVICE - Building Combined Itineraries');
@@ -1087,27 +1282,37 @@ export async function buildConnections(flightResults, trainResults, origin, dest
     console.log(`📍 Origin: ${origin}`);
     console.log(`📍 Destination: ${destination}`);
     console.log(`📅 Date: ${departDate}`);
-    console.log(`🔄 Round trip: ${returnDate ? 'Yes (' + returnDate + ')' : 'No'}`);
+    console.log(`ℹ️  Note: Connections are always one-way (ignoring returnDate)`);
     console.log(`✈️  Available flights: ${flightResults?.length || 0}`);
+    console.log(`📏 Corridor width: ${corridorWidthMiles} miles`);
+  }
+  
+  // Filter to only use one-way flights for connections
+  const onewayFlights = (flightResults || []).filter(f => 
+    f.type === 'oneway' || !f.returnDate
+  );
+  
+  if (verbose) {
+    console.log(`   One-way flights for connections: ${onewayFlights.length}`);
   }
   
   const allConnections = [];
   
-  // Scenario 1: Flight → Amtrak
+  // Scenario 1: Flight → Amtrak (always one-way)
   const flightToAmtrak = await findFlightToAmtrakConnections(
-    flightResults, origin, destination, departDate, returnDate, verbose
+    onewayFlights, origin, destination, departDate, null, verbose // null returnDate
   );
   allConnections.push(...flightToAmtrak);
   
-  // Scenario 2: Amtrak → Flight
+  // Scenario 2: Amtrak → Flight (always one-way)
   const amtrakToFlight = await findAmtrakToFlightConnections(
-    flightResults, origin, destination, departDate, returnDate, verbose
+    onewayFlights, origin, destination, departDate, null, verbose // null returnDate
   );
   allConnections.push(...amtrakToFlight);
   
-  // Scenario 3: Flight → Flight (via major hub airport)
+  // Scenario 3: Flight → Flight (via major hub airport in corridor)
   const flightToFlight = findFlightToFlightConnections(
-    flightResults, origin, destination, departDate, returnDate, verbose
+    onewayFlights, origin, destination, departDate, corridorWidthMiles, verbose
   );
   allConnections.push(...flightToFlight);
   
@@ -1138,12 +1343,16 @@ export async function buildConnections(flightResults, trainResults, origin, dest
  * Find all potential hub connections for a route
  * This function can be called independently to see what hubs connect two cities
  * 
+ * Uses geographic corridor filtering for flight-to-flight connections to
+ * reduce the search space.
+ * 
  * @param {string} origin - Origin city code
  * @param {string} destination - Destination city code
  * @param {boolean} verbose - Whether to log verbose output
+ * @param {number} corridorWidthMiles - Width of corridor for flight-flight (default 200)
  * @returns {Promise<Object>} Object with potential hubs for each direction
  */
-export async function findPotentialHubs(origin, destination, verbose = false) {
+export async function findPotentialHubs(origin, destination, verbose = false, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
   const normalizedOrigin = origin.toUpperCase().trim();
   const normalizedDest = destination.toUpperCase().trim();
   
@@ -1172,18 +1381,15 @@ export async function findPotentialHubs(origin, destination, verbose = false) {
   }
   const uniqueAirportsAmtrakFlight = [...new Set(airportCodesForAmtrakFlight)];
   
-  // Get all major hub airports for flight connections (excluding origin/dest)
-  // Also exclude codes that are the same city as origin/dest
-  const flightHubs = getMajorHubCodes().filter(
-    h => h !== normalizedOrigin && 
-         h !== normalizedDest &&
-         !isSameCity(h, normalizedOrigin) &&
-         !isSameCity(h, normalizedDest)
-  );
+  // Get flight hubs WITHIN THE CORRIDOR between origin and destination
+  // This significantly reduces the search space for flight-to-flight connections
+  const hubsInCorridor = getHubsInCorridor(normalizedOrigin, normalizedDest, corridorWidthMiles);
+  const flightHubCodes = hubsInCorridor.map(h => h.code);
   
   const result = {
     origin: normalizedOrigin,
     destination: normalizedDest,
+    corridorWidthMiles: corridorWidthMiles,
     flightToAmtrak: {
       description: `Fly to hub, then Amtrak to ${normalizedDest}`,
       hubs: hubsForFlightAmtrak,           // Amtrak station codes
@@ -1197,9 +1403,10 @@ export async function findPotentialHubs(origin, destination, verbose = false) {
       routeCount: amtrakFromOrigin.length
     },
     flightToFlight: {
-      description: `Fly to major hub, then connect to ${normalizedDest}`,
-      hubs: flightHubs,
-      hubCount: flightHubs.length
+      description: `Fly to hub in corridor, then connect to ${normalizedDest}`,
+      hubs: flightHubCodes,
+      hubCount: flightHubCodes.length,
+      hubDetails: hubsInCorridor.map(h => ({ code: h.code, city: h.city }))
     }
   };
   
@@ -1209,14 +1416,15 @@ export async function findPotentialHubs(origin, destination, verbose = false) {
     console.log('═'.repeat(60));
     console.log(`Origin: ${normalizedOrigin}`);
     console.log(`Destination: ${normalizedDest}`);
+    console.log(`Corridor Width: ${corridorWidthMiles} miles`);
     console.log('\n📍 Flight → Amtrak hubs:');
     console.log(`   Amtrak stations: ${hubsForFlightAmtrak.length > 0 ? hubsForFlightAmtrak.join(', ') : 'None found'}`);
     console.log(`   Airport codes:   ${uniqueAirportsFlightAmtrak.length > 0 ? uniqueAirportsFlightAmtrak.join(', ') : 'Same as above'}`);
     console.log('\n📍 Amtrak → Flight hubs:');
     console.log(`   Amtrak stations: ${hubsForAmtrakFlight.length > 0 ? hubsForAmtrakFlight.join(', ') : 'None found'}`);
     console.log(`   Airport codes:   ${uniqueAirportsAmtrakFlight.length > 0 ? uniqueAirportsAmtrakFlight.join(', ') : 'Same as above'}`);
-    console.log('\n✈️  Flight → Flight hubs (major airports):');
-    console.log(`   ${flightHubs.slice(0, 10).join(', ')}${flightHubs.length > 10 ? ` ... and ${flightHubs.length - 10} more` : ''}`);
+    console.log('\n✈️  Flight → Flight hubs (in corridor):');
+    console.log(`   ${flightHubCodes.length > 0 ? flightHubCodes.join(', ') : 'None in corridor'}`);
   }
   
   return result;
@@ -1240,5 +1448,11 @@ export {
   AMTRAK_TO_AIRPORTS_MAP,
   airportToAmtrak,
   amtrakToAirports,
-  isSameCity
+  isSameCity,
+  // Geographic corridor utilities
+  DEFAULT_CORRIDOR_WIDTH_MILES,
+  haversineDistance,
+  distanceToGreatCircle,
+  isHubInCorridor,
+  getHubsInCorridor
 };
