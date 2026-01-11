@@ -19,6 +19,9 @@ const question = (prompt) => new Promise((resolve) => rl.question(prompt, resolv
 /**
  * Build Google Flights URL with search parameters
  */
+/**
+ * Build Google Flights URL with search parameters
+ */
 function buildGoogleFlightsUrl(from, to, departDate, returnDate = null) {
   const baseUrl = 'https://www.google.com/travel/flights';
 
