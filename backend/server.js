@@ -70,6 +70,31 @@ function isValidAirport(code) {
   return COMMERCIAL_AIRPORTS.includes(code.toUpperCase().trim());
 }
 
+/**
+ * Check if a location code is ONLY an Amtrak station (not an airport)
+ * This helps skip unnecessary flight searches for pure train stations
+ * @param {string} code - Location code to check
+ * @returns {Promise<boolean>} True if it's only a station (not an airport)
+ */
+async function isOnlyAmtrakStation(code) {
+  if (!code) return false;
+  const normalizedCode = code.toUpperCase().trim();
+  
+  // If it's a commercial airport, it's not "only" a station
+  if (isValidAirport(normalizedCode)) {
+    return false;
+  }
+  
+  // Check if it's an Amtrak station
+  try {
+    const station = await getStationByCode(normalizedCode);
+    return station !== null;
+  } catch (error) {
+    // If we can't check, assume it might be an airport (safer to try scraping)
+    return false;
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -203,23 +228,38 @@ async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAUL
     const routesToCheck = [];
     
     // Routes for Flight → Amtrak connections
+    // Only add if hub is an airport (not only a station)
     for (const hub of amtrakHubsTo) {
       if (hub.toUpperCase() !== from.toUpperCase()) {
-        routesToCheck.push({ from, to: hub });
+        const hubIsOnlyStation = await isOnlyAmtrakStation(hub);
+        if (!hubIsOnlyStation) {
+          routesToCheck.push({ from, to: hub });
+        }
       }
     }
     
     // Routes for Amtrak → Flight connections
-    for (const hub of amtrakHubsFrom) {
-      if (hub.toUpperCase() !== to.toUpperCase()) {
-        routesToCheck.push({ from: hub, to });
+    // Only add if destination is an airport (not only a station)
+    const toIsOnlyStation = await isOnlyAmtrakStation(to);
+    if (!toIsOnlyStation) {
+      for (const hub of amtrakHubsFrom) {
+        if (hub.toUpperCase() !== to.toUpperCase()) {
+          routesToCheck.push({ from: hub, to });
+        }
       }
     }
     
     // Routes for Flight → Flight connections
-    for (const hub of flightHubsInCorridor) {
-      routesToCheck.push({ from, to: hub });
-      routesToCheck.push({ from: hub, to });
+    // Only add routes where both endpoints are airports
+    const fromIsOnlyStation = await isOnlyAmtrakStation(from);
+    if (!fromIsOnlyStation && !toIsOnlyStation) {
+      for (const hub of flightHubsInCorridor) {
+        const hubIsOnlyStation = await isOnlyAmtrakStation(hub);
+        if (!hubIsOnlyStation) {
+          routesToCheck.push({ from, to: hub });
+          routesToCheck.push({ from: hub, to });
+        }
+      }
     }
     
     if (routesToCheck.length === 0) {
@@ -640,13 +680,24 @@ app.post('/api/search', async (req, res) => {
       
       const allResults = [];
       
+      // Check if locations are only stations (reused throughout roundtrip logic)
+      const toIsOnlyStation = await isOnlyAmtrakStation(to);
+      const fromIsOnlyStation = await isOnlyAmtrakStation(from);
+      
       // Step 1: Get roundtrip flights from Google Flights
       console.log('\n✈️ [ROUNDTRIP FLIGHTS] Fetching roundtrip flights...');
-      let roundtripFlights = await checkDatabase({ from, to, departDate, returnDate, tripType: 'roundtrip' });
       
-      if (!roundtripFlights) {
-        console.log('🌐 [SCRAPER] Scraping roundtrip flights...');
-        roundtripFlights = await scrapeGoogleFlights(from, to, departDate, returnDate);
+      let roundtripFlights = null;
+      if (toIsOnlyStation || fromIsOnlyStation) {
+        console.log(`🚂 [SKIP FLIGHTS] ${toIsOnlyStation ? 'Destination' : 'Origin'} is only an Amtrak station - skipping roundtrip flight search`);
+        roundtripFlights = [];
+      } else {
+        roundtripFlights = await checkDatabase({ from, to, departDate, returnDate, tripType: 'roundtrip' });
+        
+        if (!roundtripFlights) {
+          console.log('🌐 [SCRAPER] Scraping roundtrip flights...');
+          roundtripFlights = await scrapeGoogleFlights(from, to, departDate, returnDate);
+        }
       }
       
       if (roundtripFlights && roundtripFlights.length > 0) {
@@ -682,21 +733,34 @@ app.post('/api/search', async (req, res) => {
       
       // Step 4: Get one-way flights for outbound (from→to) if not already included
       console.log('\n✈️ [OUTBOUND FLIGHTS] Checking for one-way outbound flights...');
-      let outboundFlights = await checkDatabase({ from, to, departDate, returnDate: null, tripType: 'oneway' });
       
-      if (!outboundFlights) {
-        console.log('🌐 [SCRAPER] Scraping one-way outbound flights...');
-        outboundFlights = await scrapeGoogleFlights(from, to, departDate, null);
+      let outboundFlights = null;
+      if (toIsOnlyStation || fromIsOnlyStation) {
+        console.log(`🚂 [SKIP FLIGHTS] ${toIsOnlyStation ? 'Destination' : 'Origin'} is only an Amtrak station - skipping outbound flight search`);
+        outboundFlights = [];
+      } else {
+        outboundFlights = await checkDatabase({ from, to, departDate, returnDate: null, tripType: 'oneway' });
+        
+        if (!outboundFlights) {
+          console.log('🌐 [SCRAPER] Scraping one-way outbound flights...');
+          outboundFlights = await scrapeGoogleFlights(from, to, departDate, null);
+        }
       }
       console.log(`✅ Found ${outboundFlights?.length || 0} one-way outbound flights`);
       
       // Step 5: Get one-way flights for return (to→from)
       console.log('\n✈️ [RETURN FLIGHTS] Fetching one-way return flights...');
-      let returnFlights = await checkDatabase({ from: to, to: from, departDate: returnDate, returnDate: null, tripType: 'oneway' });
-      
-      if (!returnFlights) {
-        console.log('🌐 [SCRAPER] Scraping one-way return flights...');
-        returnFlights = await scrapeGoogleFlights(to, from, returnDate, null);
+      let returnFlights = null;
+      if (toIsOnlyStation || fromIsOnlyStation) {
+        console.log(`🚂 [SKIP FLIGHTS] ${toIsOnlyStation ? 'Origin' : 'Destination'} is only an Amtrak station - skipping return flight search`);
+        returnFlights = [];
+      } else {
+        returnFlights = await checkDatabase({ from: to, to: from, departDate: returnDate, returnDate: null, tripType: 'oneway' });
+        
+        if (!returnFlights) {
+          console.log('🌐 [SCRAPER] Scraping one-way return flights...');
+          returnFlights = await scrapeGoogleFlights(to, from, returnDate, null);
+        }
       }
       console.log(`✅ Found ${returnFlights?.length || 0} one-way return flights`);
       
@@ -737,19 +801,31 @@ app.post('/api/search', async (req, res) => {
     // =====================================================
     console.log('\n➡️ [ONE-WAY] Processing one-way search...');
     
-    // Step 1: Check database first (placeholder)
-    let flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
+    // Step 1: Check if destination is ONLY an Amtrak station (not an airport)
+    // Skip flight scraping for pure train stations to save time
+    const toIsOnlyStation = await isOnlyAmtrakStation(to);
+    const fromIsOnlyStation = await isOnlyAmtrakStation(from);
+    
+    let flightResults = null;
+    
+    if (toIsOnlyStation || fromIsOnlyStation) {
+      console.log(`🚂 [SKIP FLIGHTS] ${toIsOnlyStation ? 'Destination' : 'Origin'} is only an Amtrak station (not an airport) - skipping flight search`);
+      flightResults = []; // Empty array to indicate no flights (but don't trigger scraper)
+    } else {
+      // Step 2: Check database first
+      flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
-    // Step 2: If no database results, use web scraper
-    // Note: The scraper (flightScraper.js) automatically saves results to MongoDB
-    if (!flightResults) {
-      console.log('🌐 [SCRAPER] Starting web scraper...');
-      flightResults = await scrapeGoogleFlights(
-        from,
-        to,
-        departDate,
-        null // Always one-way for one-way searches
-      );
+      // Step 3: If no database results, use web scraper
+      // Note: The scraper (flightScraper.js) automatically saves results to MongoDB
+      if (!flightResults) {
+        console.log('🌐 [SCRAPER] Starting web scraper...');
+        flightResults = await scrapeGoogleFlights(
+          from,
+          to,
+          departDate,
+          null // Always one-way for one-way searches
+        );
+      }
     }
 
     // Step 3: Fetch train data in parallel
