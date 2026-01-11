@@ -94,10 +94,39 @@ function App() {
   // Callback for Chatbot to update form values
   const handleChatbotFormUpdate = (searchParams) => {
     if (searchParams) {
-      setFormValues(prev => ({
-        ...prev,
-        ...searchParams
-      }))
+      setFormValues(prev => {
+        const updated = {
+          ...prev,
+          ...searchParams
+        }
+        
+        // Check if all required fields are filled after update
+        const hasFrom = updated.from && updated.from.trim()
+        const hasTo = updated.to && updated.to.trim()
+        const hasDepartDate = updated.departDate && updated.departDate.trim()
+        const hasTripType = updated.tripType
+        const hasReturnDate = updated.tripType === 'roundtrip' 
+          ? (updated.returnDate && updated.returnDate.trim())
+          : true // Return date only required for round trips
+        
+        // If all required fields are present, trigger search automatically
+        if (hasFrom && hasTo && hasDepartDate && hasTripType && hasReturnDate) {
+          console.log('🤖 Auto-triggering search from chatbot form fill')
+          // Use setTimeout to avoid state update issues
+          setTimeout(() => {
+            handleSearch({
+              from: updated.from.trim(),
+              to: updated.to.trim(),
+              departDate: updated.departDate.trim(),
+              returnDate: updated.tripType === 'roundtrip' ? updated.returnDate.trim() : null,
+              tripType: updated.tripType,
+              sortBy: updated.sortBy || 'price'
+            })
+          }, 100)
+        }
+        
+        return updated
+      })
     }
   }
 
