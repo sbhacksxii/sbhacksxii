@@ -46,7 +46,7 @@ app.use(express.json());
  * - Return null to trigger scraper if no data or stale
  */
 async function checkDatabase(searchParams) {
-  const {from, to, departDate, returnDate} = searchParams;
+  const {from, to, departDate, returnDate, tripType} = searchParams;
   
   console.log('📊 [DATABASE] Checking for cached results...');
   console.log(`   Route: ${from} → ${to}`);
@@ -61,7 +61,7 @@ async function checkDatabase(searchParams) {
     await client.connect(); 
     const db = client.db(dbName); 
     const collection = db.collection(collectionName); 
-    const query = {'departure.location': from, 'arrival.location': to, departDate: departDate, returnDate: returnDate || null};
+    const query = {'departure.location': from, 'arrival.location': to, departDate: departDate, returnDate: returnDate || null, type: tripType};
     const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
      console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
