@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk'
 
-function Chatbot() {
+function Chatbot({ onFormUpdate }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -245,6 +245,11 @@ function Chatbot() {
         // If backend returned an error response, use it
         if (errorData.response) {
           setMessages(prev => [...prev, { role: 'assistant', content: errorData.response }])
+          // Still check for searchParams even in error responses
+          if (errorData.searchParams && onFormUpdate) {
+            console.log('Chatbot: Updating form with search parameters from error response:', errorData.searchParams)
+            onFormUpdate(errorData.searchParams)
+          }
           return
         }
         
@@ -265,6 +270,12 @@ function Chatbot() {
       // Extract response text - handle both success and error formats
       const assistantResponse = data.response || data.message || data.error || 'Sorry, I couldn\'t generate a response. Please try again.'
       setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }])
+      
+      // If search parameters were extracted, update the form
+      if (data.searchParams && onFormUpdate) {
+        console.log('Chatbot: Updating form with search parameters:', data.searchParams)
+        onFormUpdate(data.searchParams)
+      }
     } catch (err) {
       console.error('Chatbot error:', err)
       console.error('Chatbot: Request URL was:', requestUrl)

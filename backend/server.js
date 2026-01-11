@@ -177,16 +177,31 @@ app.post('/api/chat', async (req, res) => {
 2. Provide helpful information about travel planning
 3. Guide users on how to use the search form on the website
 4. Be conversational, friendly, and use emojis appropriately (but not excessively)
-5. When users ask about specific routes, acknowledge their request and guide them to use the search form
+5. When users ask about specific routes, extract the search parameters and fill in the search form
 
 Important context:
 - The platform allows users to search for flights, trains, and buses
 - Users can compare prices and travel times
 - There's a search form on the left side of the page where users can enter origin, destination, dates, etc.
 - Be concise but helpful - keep responses under 200 words unless detailed information is requested
-- If users ask about specific routes, encourage them to use the search form to see actual results
+- When users ask to search for travel options, extract the following information: origin city, destination city, departure date, return date (if round trip), and trip type (oneway or roundtrip)
 
-Respond naturally and conversationally, as if you're a knowledgeable travel assistant helping a friend plan their trip.`;
+When a user asks to search for travel, respond in JSON format with this structure:
+{
+  "response": "your conversational response",
+  "searchParams": {
+    "from": "origin city or airport code",
+    "to": "destination city or airport code",
+    "departDate": "YYYY-MM-DD format",
+    "returnDate": "YYYY-MM-DD format or null",
+    "tripType": "oneway" or "roundtrip",
+    "sortBy": "price" or "time"
+  }
+}
+
+If the user is NOT asking to search (just having a conversation), respond normally with just: {"response": "your response", "searchParams": null}
+
+Always respond in valid JSON format.`;
 
     // Build conversation history for context
     let conversationMessages = [
@@ -221,15 +236,65 @@ Respond naturally and conversationally, as if you're a knowledgeable travel assi
       messages: conversationMessages,
       model: 'llama-3.3-70b-versatile', // Using Llama 3.3 70B model - fast and capable
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 800, // Increased to accommodate JSON responses
       top_p: 1,
-      stream: false
+      stream: false,
+      response_format: { type: 'json_object' } // Request JSON format
     });
 
-    const assistantResponse = completion.choices[0]?.message?.content || 'Sorry, I couldn\'t generate a response. Please try again.';
+    const rawResponse = completion.choices[0]?.message?.content || '{"response": "Sorry, I couldn\'t generate a response. Please try again.", "searchParams": null}';
+
+    // Try to parse the JSON response
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(rawResponse);
+    } catch (parseError) {
+      // If parsing fails, treat as plain text response
+      console.warn('Failed to parse JSON response, using as plain text:', parseError);
+      parsedResponse = {
+        response: rawResponse,
+        searchParams: null
+      };
+    }
+
+    // Validate and clean search parameters if present
+    let searchParams = null;
+    if (parsedResponse.searchParams) {
+      const params = parsedResponse.searchParams;
+      
+      // Only include searchParams if we have at least origin and destination
+      if (params.from && params.to) {
+        // Convert dates to YYYY-MM-DD format if provided
+        const formatDate = (dateStr) => {
+          if (!dateStr || dateStr === 'null' || dateStr === null) return null;
+          try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
+            return date.toISOString().split('T')[0];
+          } catch {
+            return null;
+          }
+        };
+
+        searchParams = {
+          from: params.from.trim(),
+          to: params.to.trim(),
+          departDate: formatDate(params.departDate) || null,
+          returnDate: formatDate(params.returnDate) || null,
+          tripType: (params.tripType === 'roundtrip' || params.returnDate) ? 'roundtrip' : 'oneway',
+          sortBy: (params.sortBy === 'time') ? 'time' : 'price'
+        };
+
+        // If it's a round trip but no return date, set tripType to oneway
+        if (searchParams.tripType === 'roundtrip' && !searchParams.returnDate) {
+          searchParams.tripType = 'oneway';
+        }
+      }
+    }
 
     return res.json({
-      response: assistantResponse
+      response: parsedResponse.response || rawResponse,
+      searchParams: searchParams
     });
 
   } catch (error) {
