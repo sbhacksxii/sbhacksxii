@@ -192,14 +192,16 @@ When a user asks to search for travel, respond in JSON format with this structur
   "searchParams": {
     "from": "origin city or airport code",
     "to": "destination city or airport code",
-    "departDate": "YYYY-MM-DD format",
-    "returnDate": "YYYY-MM-DD format or null",
+    "departDate": "YYYY-MM-DD format (e.g., 2025-01-15). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY",
+    "returnDate": "YYYY-MM-DD format or null (e.g., 2025-01-20). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY",
     "tripType": "oneway" or "roundtrip",
     "sortBy": "price" or "time"
   }
 }
 
 If the user is NOT asking to search (just having a conversation), respond normally with just: {"response": "your response", "searchParams": null}
+
+CRITICAL: Dates MUST be in YYYY-MM-DD format (year-month-day). If a user says "1/15/2025", convert it to "2025-01-15". Never use MM/DD/YYYY format in the JSON response.
 
 Always respond in valid JSON format.`;
 
@@ -267,10 +269,36 @@ Always respond in valid JSON format.`;
         // Convert dates to YYYY-MM-DD format if provided
         const formatDate = (dateStr) => {
           if (!dateStr || dateStr === 'null' || dateStr === null) return null;
+          
           try {
+            // Handle MM/DD/YYYY or M/D/YYYY format explicitly
+            const slashFormat = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = dateStr.trim().match(slashFormat);
+            
+            if (match) {
+              const month = parseInt(match[1], 10);
+              const day = parseInt(match[2], 10);
+              const year = parseInt(match[3], 10);
+              
+              // Validate month and day ranges
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const date = new Date(year, month - 1, day); // month is 0-indexed in Date
+                if (!isNaN(date.getTime())) {
+                  const yearStr = date.getFullYear().toString();
+                  const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+                  const dayStr = date.getDate().toString().padStart(2, '0');
+                  return `${yearStr}-${monthStr}-${dayStr}`;
+                }
+              }
+            }
+            
+            // Try parsing as ISO format (YYYY-MM-DD) or other standard formats
             const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return null;
-            return date.toISOString().split('T')[0];
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split('T')[0];
+            }
+            
+            return null;
           } catch {
             return null;
           }
