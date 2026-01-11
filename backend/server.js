@@ -61,7 +61,7 @@ async function checkDatabase(searchParams) {
     await client.connect(); 
     const db = client.db(dbName); 
     const collection = db.collection(collectionName); 
-    const query = {departure: {location: from}, arrival: {location: to}, date: departDate, tripType};
+    const query = {departure: {location: from}, arrival: {location: to}, departDate: departDate, returnDate: returnDate, type: 'flight'};
     const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
      console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
