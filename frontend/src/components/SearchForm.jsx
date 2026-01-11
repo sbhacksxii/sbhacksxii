@@ -2,16 +2,20 @@ import { useState, useEffect, useRef } from 'react'
 
 // Hardcoded list of airports and Amtrak stations
 const LOCATIONS = [
-  // Major Hub Airports
-  { code: 'LAX', name: 'Los Angeles International Airport', city: 'Los Angeles', state: 'CA', type: 'airport' },
+  // Combined Airport + Amtrak Station (same code for both)
+  { code: 'LAX', name: 'Los Angeles Airport & Union Station', city: 'Los Angeles', state: 'CA', type: 'both' },
+  { code: 'SAN', name: 'San Diego Airport & Santa Fe Depot', city: 'San Diego', state: 'CA', type: 'both' },
+  { code: 'DEN', name: 'Denver Airport & Union Station', city: 'Denver', state: 'CO', type: 'both' },
+  { code: 'SLC', name: 'Salt Lake City Airport & Station', city: 'Salt Lake City', state: 'UT', type: 'both' },
+  { code: 'SEA', name: 'Seattle Airport & King Street Station', city: 'Seattle', state: 'WA', type: 'both' },
+  { code: 'PDX', name: 'Portland Airport & Union Station', city: 'Portland', state: 'OR', type: 'both' },
+  { code: 'BOS', name: 'Boston Logan Airport & South Station', city: 'Boston', state: 'MA', type: 'both' },
+  { code: 'PHL', name: 'Philadelphia Airport & 30th Street Station', city: 'Philadelphia', state: 'PA', type: 'both' },
+  
+  // Airports Only
   { code: 'SFO', name: 'San Francisco International Airport', city: 'San Francisco', state: 'CA', type: 'airport' },
   { code: 'OAK', name: 'Oakland International Airport', city: 'Oakland', state: 'CA', type: 'airport' },
   { code: 'SJC', name: 'San Jose International Airport', city: 'San Jose', state: 'CA', type: 'airport' },
-  { code: 'SAN', name: 'San Diego International Airport', city: 'San Diego', state: 'CA', type: 'airport' },
-  { code: 'DEN', name: 'Denver International Airport', city: 'Denver', state: 'CO', type: 'airport' },
-  { code: 'SLC', name: 'Salt Lake City International Airport', city: 'Salt Lake City', state: 'UT', type: 'airport' },
-  { code: 'SEA', name: 'Seattle-Tacoma International Airport', city: 'Seattle', state: 'WA', type: 'airport' },
-  { code: 'PDX', name: 'Portland International Airport', city: 'Portland', state: 'OR', type: 'airport' },
   { code: 'ORD', name: "Chicago O'Hare International Airport", city: 'Chicago', state: 'IL', type: 'airport' },
   { code: 'DFW', name: 'Dallas/Fort Worth International Airport', city: 'Dallas', state: 'TX', type: 'airport' },
   { code: 'AUS', name: 'Austin-Bergstrom International Airport', city: 'Austin', state: 'TX', type: 'airport' },
@@ -21,7 +25,6 @@ const LOCATIONS = [
   { code: 'JFK', name: 'John F. Kennedy International Airport', city: 'New York', state: 'NY', type: 'airport' },
   { code: 'LGA', name: 'LaGuardia Airport', city: 'New York', state: 'NY', type: 'airport' },
   { code: 'EWR', name: 'Newark Liberty International Airport', city: 'Newark', state: 'NJ', type: 'airport' },
-  { code: 'BOS', name: 'Boston Logan International Airport', city: 'Boston', state: 'MA', type: 'airport' },
   { code: 'DCA', name: 'Ronald Reagan Washington National Airport', city: 'Washington DC', state: 'DC', type: 'airport' },
   { code: 'IAD', name: 'Washington Dulles International Airport', city: 'Washington DC', state: 'VA', type: 'airport' },
   { code: 'PHX', name: 'Phoenix Sky Harbor International Airport', city: 'Phoenix', state: 'AZ', type: 'airport' },
@@ -31,26 +34,17 @@ const LOCATIONS = [
   { code: 'MSP', name: 'Minneapolis-Saint Paul International Airport', city: 'Minneapolis', state: 'MN', type: 'airport' },
   { code: 'DTW', name: 'Detroit Metropolitan Airport', city: 'Detroit', state: 'MI', type: 'airport' },
   { code: 'CLT', name: 'Charlotte Douglas International Airport', city: 'Charlotte', state: 'NC', type: 'airport' },
-  { code: 'PHL', name: 'Philadelphia International Airport', city: 'Philadelphia', state: 'PA', type: 'airport' },
   
-  // Amtrak Stations
-  { code: 'LAX', name: 'Los Angeles Union Station', city: 'Los Angeles', state: 'CA', type: 'station' },
+  // Amtrak Stations Only
   { code: 'SBA', name: 'Santa Barbara Station', city: 'Santa Barbara', state: 'CA', type: 'station' },
-  { code: 'SAN', name: 'San Diego Santa Fe Depot', city: 'San Diego', state: 'CA', type: 'station' },
   { code: 'SAC', name: 'Sacramento Valley Station', city: 'Sacramento', state: 'CA', type: 'station' },
+  { code: 'SFC', name: 'San Francisco / Emeryville Station', city: 'San Francisco Bay Area', state: 'CA', type: 'station' },
   { code: 'CHI', name: 'Chicago Union Station', city: 'Chicago', state: 'IL', type: 'station' },
   { code: 'NYP', name: 'New York Penn Station', city: 'New York', state: 'NY', type: 'station' },
-  { code: 'BOS', name: 'Boston South Station', city: 'Boston', state: 'MA', type: 'station' },
   { code: 'WAS', name: 'Washington Union Station', city: 'Washington', state: 'DC', type: 'station' },
-  { code: 'PHL', name: 'Philadelphia 30th Street Station', city: 'Philadelphia', state: 'PA', type: 'station' },
-  { code: 'SEA', name: 'Seattle King Street Station', city: 'Seattle', state: 'WA', type: 'station' },
-  { code: 'PDX', name: 'Portland Union Station', city: 'Portland', state: 'OR', type: 'station' },
-  { code: 'DEN', name: 'Denver Union Station', city: 'Denver', state: 'CO', type: 'station' },
   { code: 'ABQ', name: 'Albuquerque Station', city: 'Albuquerque', state: 'NM', type: 'station' },
   { code: 'NOL', name: 'New Orleans Union Passenger Terminal', city: 'New Orleans', state: 'LA', type: 'station' },
-  { code: 'SFC', name: 'San Francisco / Emeryville Station', city: 'San Francisco Bay Area', state: 'CA', type: 'station' },
   { code: 'OMA', name: 'Omaha Station', city: 'Omaha', state: 'NE', type: 'station' },
-  { code: 'SLC', name: 'Salt Lake City Station', city: 'Salt Lake City', state: 'UT', type: 'station' },
   { code: 'KYC', name: 'Kansas City Union Station', city: 'Kansas City', state: 'MO', type: 'station' },
   { code: 'SPK', name: 'Spokane Station', city: 'Spokane', state: 'WA', type: 'station' },
 ]
@@ -70,13 +64,20 @@ function LocationAutocomplete({
   const wrapperRef = useRef(null)
   const inputRef = useRef(null)
 
+  // Helper to get icon for location type
+  const getTypeIcon = (type) => {
+    if (type === 'both') return '✈️🚂'
+    if (type === 'airport') return '✈️'
+    return '🚂'
+  }
+
   // Update inputValue when value prop changes (for controlled component)
   useEffect(() => {
     if (value) {
       // Find the matching location to show its display name
       const match = locations.find(loc => loc.code === value)
       if (match) {
-        setInputValue(`${match.code} - ${match.city} (${match.type === 'airport' ? '✈️' : '🚂'})`)
+        setInputValue(`${match.code} - ${match.city} (${getTypeIcon(match.type)})`)
       } else {
         setInputValue(value)
       }
@@ -125,7 +126,7 @@ function LocationAutocomplete({
 
   const handleSelect = (location) => {
     onChange(location.code)
-    setInputValue(`${location.code} - ${location.city} (${location.type === 'airport' ? '✈️' : '🚂'})`)
+    setInputValue(`${location.code} - ${location.city} (${getTypeIcon(location.type)})`)
     setIsOpen(false)
     inputRef.current?.blur()
   }
@@ -169,7 +170,7 @@ function LocationAutocomplete({
               className="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-2 border-b border-gray-100 last:border-b-0"
             >
               <span className="text-lg">
-                {location.type === 'airport' ? '✈️' : '🚂'}
+                {getTypeIcon(location.type)}
               </span>
               <div className="flex-1">
                 <div className="font-medium text-gray-900">
@@ -180,11 +181,13 @@ function LocationAutocomplete({
                 </div>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded ${
-                location.type === 'airport' 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-green-100 text-green-700'
+                location.type === 'both'
+                  ? 'bg-purple-100 text-purple-700'
+                  : location.type === 'airport' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-green-100 text-green-700'
               }`}>
-                {location.type === 'airport' ? 'Airport' : 'Station'}
+                {location.type === 'both' ? 'Airport + Station' : location.type === 'airport' ? 'Airport' : 'Station'}
               </span>
             </li>
           ))}
