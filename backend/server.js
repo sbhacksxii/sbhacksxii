@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
 import { MongoClient } from 'mongodb';
+import Groq from 'groq-sdk';
 import { 
   getAmtrakFare, 
   getStations, 
@@ -15,6 +16,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize Groq client
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || ''
+});
 
 // CORS configuration - allow requests from your Netlify frontend
 const allowedOrigins = [
@@ -281,7 +287,7 @@ app.post('/api/search', async (req, res) => {
   }
 });
 
-// Chat endpoint with improved rule-based chatbot logic
+// Chat endpoint with Groq AI integration
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, messages } = req.body;
@@ -291,138 +297,249 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const userMessage = message.trim();
-    const userMessageLower = userMessage.toLowerCase();
-    
-    // Better extraction patterns - handle more natural language
-    const fromPatterns = [
-      /(?:from|leaving|departing|flying\s+from|starting\s+in)\s+([a-z][a-z\s,'-]+?)(?:\s+to|\s+going|\s+destined|\s+arriving|\s+on|$)/i,
-      /^([a-z][a-z\s,'-]+?)\s+to\s+[a-z]/i // "New York to Los Angeles"
+
+    // Check if Groq API key is configured
+    if (!process.env.GROQ_API_KEY) {
+      console.warn('⚠️ GROQ_API_KEY not configured, using fallback response');
+      return res.json({
+        response: 'I\'m here to help you plan your trip! 🎒\n\nPlease configure the GROQ_API_KEY environment variable to enable AI-powered responses.\n\nTry asking me:\n• "Find flights from [city] to [city]"\n• "What\'s the cheapest way to get from New York to Los Angeles?"\n• "Show me travel options to Paris"\n\nYou can also use the search form on the left for detailed searches with specific dates. ✈️'
+      });
+    }
+
+    // System prompt for the travel assistant
+    const systemPrompt = `You are a helpful and friendly travel assistant chatbot for a multi-transport travel comparison platform. Your role is to:
+
+1. Help users find travel options (flights, trains, buses) between cities
+2. Provide helpful information about travel planning
+3. Guide users on how to use the search form on the website
+4. Be conversational, friendly, and use emojis appropriately (but not excessively)
+5. When users ask about specific routes, ALWAYS ask for missing information before filling the form
+
+IMPORTANT INFORMATION COLLECTION RULES:
+- When a user asks to search for flights/travel, you MUST collect ALL required information before filling the form
+- REQUIRED information: origin city, destination city, departure date, and trip type (oneway vs roundtrip)
+- ALWAYS ask: "What date would you like to depart?" if departure date is not provided
+- ALWAYS ask: "Is this a one-way or round-trip?" if trip type is not clear
+- If it's a round trip, ask: "What date would you like to return?" if return date is not provided
+- Only fill in the search form (return searchParams) when you have: origin, destination, departure date, and trip type confirmed
+
+When a user asks to search for travel but information is missing, respond conversationally asking for the missing details:
+{"response": "I'd be happy to help you find flights! To get started, I need a few details:\n\n• What date would you like to depart?\n• Is this a one-way or round-trip?", "searchParams": null}
+
+When you have ALL required information (origin, destination, departure date, trip type), respond in JSON format with this structure:
+{
+  "response": "your conversational response confirming the search",
+  "searchParams": {
+    "from": "origin city or airport code",
+    "to": "destination city or airport code",
+    "departDate": "YYYY-MM-DD format (e.g., 2026-01-15). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
+    "returnDate": "YYYY-MM-DD format or null (only if roundtrip). IMPORTANT: Always use YYYY-MM-DD format, NOT MM/DD/YYYY. Default year is 2026 if user doesn't specify",
+    "tripType": "oneway" or "roundtrip",
+    "sortBy": "price" or "time"
+  }
+}
+
+If the user is NOT asking to search (just having a conversation), respond normally with just: {"response": "your response", "searchParams": null}
+
+CRITICAL: 
+- Dates MUST be in YYYY-MM-DD format (year-month-day). If a user says "1/15" or "January 15" without a year, use 2026 as the default year (e.g., "2026-01-15")
+- If a user says "1/15/2025" or "10/01/2026", convert it to "2025-01-15" or "2026-10-01" respectively
+- Default year is 2026 when user doesn't specify a year
+- Never use MM/DD/YYYY format in the JSON response
+- Always ask for missing information - don't guess or assume
+
+Always respond in valid JSON format.`;
+
+    // Build conversation history for context
+    let conversationMessages = [
+      {
+        role: 'system',
+        content: systemPrompt
+      }
     ];
-    const toPatterns = [
-      /(?:to|going\s+to|traveling\s+to|arriving\s+at|destination|flying\s+to)\s+([a-z][a-z\s,'-]+?)(?:\s+from|\s+on|\s+date|\s+$)/i,
-      /[a-z]\s+to\s+([a-z][a-z\s,'-]+?)(?:\s+on|\s+$)/i // "New York to Los Angeles"
-    ];
-    const datePatterns = [
-      /(?:on|date|departure|leaving|returning|depart)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
-      /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i, // Just a date
-      /(?:on|for)\s+(\w+\s+\d{1,2})/i // "on January 15"
-    ];
-    
-    let from = null;
-    let to = null;
-    let date = null;
-    
-    // Try to extract from/to using multiple patterns
-    for (const pattern of fromPatterns) {
-      const match = userMessage.match(pattern);
-      if (match) {
-        from = match[1].trim().replace(/[,\s]+$/, ''); // Remove trailing commas/spaces
-        break;
-      }
-    }
-    
-    for (const pattern of toPatterns) {
-      const match = userMessage.match(pattern);
-      if (match) {
-        to = match[1].trim().replace(/[,\s]+$/, '');
-        break;
-      }
-    }
-    
-    // Extract date
-    for (const pattern of datePatterns) {
-      const match = userMessage.match(pattern);
-      if (match) {
-        date = match[1].trim();
-        break;
-      }
-    }
-    
-    const priceWords = userMessageLower.match(/(?:cheapest|cheap|lowest\s+price|affordable|budget|save\s+money|low\s+cost)/i);
-    const timeWords = userMessageLower.match(/(?:fastest|quickest|shortest|time|duration|quick|fast)/i);
-    const flightWords = userMessageLower.match(/(?:flight|fly|airplane|airline)/i);
-    const trainWords = userMessageLower.match(/(?:train|railway|amtrak)/i);
-    const busWords = userMessageLower.match(/(?:bus|greyhound|megabus)/i);
-    
-    // Handle greetings with more personality
-    if (userMessageLower.match(/(?:hi|hello|hey|greetings|good\s+(morning|afternoon|evening)|what's\s+up)/i)) {
-      return res.json({
-        response: 'Hi there! 👋 I\'m here to help you plan your trip and find the best travel options.\n\nI can help you:\n• Compare flights, trains, and buses\n• Find the cheapest or fastest routes\n• Search by destination and dates\n\nWhat would you like to search for? For example, try: "Find flights from New York to Los Angeles" or "What\'s the cheapest way to get from Boston to Chicago?"'
-      });
-    }
 
-    // Handle help requests
-    if (userMessageLower.match(/(?:help|what\s+can\s+you\s+do|how\s+do\s+i|instructions|what\s+do\s+you\s+do)/i)) {
-      return res.json({
-        response: 'I\'m your travel assistant! ✈️ I can help you:\n\n✅ Search for flights, trains, and buses\n✅ Compare prices and travel times\n✅ Find the cheapest or fastest options\n✅ Help you plan your trip\n\n**How to use me:**\nJust tell me where you want to go! For example:\n• "I need to get from New York to Los Angeles"\n• "Find the cheapest flight to Paris"\n• "What\'s the fastest way from Boston to Chicago?"\n\nOr use the search form on the left for detailed searches with specific dates!'
-      });
-    }
-
-    // Handle travel queries with both locations
-    if (from && to) {
-      const searchType = priceWords ? 'cheapest' : timeWords ? 'fastest' : 'best';
-      const transportType = flightWords ? 'flights' : trainWords ? 'trains' : busWords ? 'buses' : 'travel options';
-      const dateStr = date ? ` on ${date}` : '';
-      
-      // Capitalize city names properly
-      const fromCap = from.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      const toCap = to.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      
-      return res.json({
-        response: `Great! I'd love to help you find ${searchType === 'cheapest' ? 'the most affordable' : searchType === 'fastest' ? 'the quickest' : 'the best'} ${transportType} from ${fromCap} to ${toCap}${dateStr}.\n\nTo get your results:\nUse the search form on the left side of the page:\n1. Enter "From": ${fromCap}\n2. Enter "To": ${toCap}${date ? `\n3. Select "Departure Date": ${date}` : '\n3. Select your departure date'}\n4. Click "Search"\n\nI'll show you all available options sorted by ${searchType === 'cheapest' ? 'price (lowest first)' : searchType === 'fastest' ? 'travel time (fastest first)' : 'best value'}! 🎯`
-      });
-    } 
-    // Handle single location - ask for the other
-    else if (from || to) {
-      const location = from || to;
-      const locationCap = location.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      
-      if (from) {
-        return res.json({
-          response: `I see you're starting from ${locationCap}! 🌍 Where would you like to travel to? Just tell me your destination, for example:\n\n• "I want to go to Los Angeles"\n• "Find flights to Paris"\n• "What about Chicago?"\n\nOnce you tell me both cities, I can help you find the best travel options!`
-        });
-      } else {
-        return res.json({
-          response: `So you want to go to ${locationCap}! ✈️ That sounds great. Where are you traveling from?\n\nJust tell me your starting city, for example:\n• "I'm starting from New York"\n• "From Boston"\n• "Leaving from San Francisco"\n\nOnce I know both locations, I can help you compare all the travel options!`
-        });
+    // Add conversation history if provided (for context)
+    if (messages && Array.isArray(messages)) {
+      // Add previous messages (limit to last 10 for context)
+      const recentMessages = messages.slice(-10);
+      for (const msg of recentMessages) {
+        if (msg.role && msg.content) {
+          conversationMessages.push({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.content
+          });
+        }
       }
     }
 
-    // Handle price-related queries
-    if (priceWords) {
-      return res.json({
-        response: 'Looking for budget-friendly options? 💰 I can definitely help with that!\n\nTo find the cheapest travel options, I need:\n• Where you\'re starting from (your origin city)\n• Where you want to go (your destination)\n• When you want to travel (optional, but helps find better deals)\n\nExample queries:\n• "Find the cheapest flight from New York to Los Angeles"\n• "What\'s the most affordable way to get from Boston to Chicago?"\n• "I need cheap flights to Paris"\n\nOr use the search form on the left - it will automatically sort by price!'
-      });
-    }
-
-    // Handle time-related queries
-    if (timeWords) {
-      return res.json({
-        response: 'Looking for the fastest route? ⚡ I can help you find the quickest travel options!\n\nTo find the fastest options, tell me:\n• Your starting location\n• Your destination\n• Travel date (optional)\n\nExample queries:\n• "What\'s the fastest way from New York to Los Angeles?"\n• "Find the quickest flight to Chicago"\n• "I need to get from Boston to San Francisco as fast as possible"\n\nYou can also use the search form and sort by "Time" to see the fastest options first!'
-      });
-    }
-
-    // Handle thank you
-    if (userMessageLower.match(/(?:thanks|thank\s+you|appreciate|awesome|perfect)/i)) {
-      return res.json({
-        response: 'You\'re very welcome! 😊 I\'m here anytime you need help planning your trip. Safe travels! ✈️🌍'
-      });
-    }
-
-    // Handle questions about the service
-    if (userMessageLower.match(/(?:what|how|can|does|is|are)\s+(you|this|it)/i)) {
-      return res.json({
-        response: 'I\'m a travel assistant that helps you compare flights, trains, and buses all in one place! 🗺️\n\nWhat I do:\n• Compare prices across different transportation options\n• Find the fastest or cheapest routes\n• Help you plan your trip\n\nHow to use me:\nJust tell me where you want to go! For example:\n• "Find flights from New York to Los Angeles"\n• "What\'s the cheapest way to get to Chicago?"\n• "I need to travel from Boston to San Francisco"\n\nTry asking me about a specific route, or use the search form for detailed searches!'
-      });
-    }
-
-    // More helpful default response
-    return res.json({
-      response: 'I\'m here to help you plan your trip! 🎒\n\nTry asking me:\n• "Find flights from [city] to [city]"\n• "What\'s the cheapest way to get from New York to Los Angeles?"\n• "Show me travel options to Paris"\n• "I need to get from Boston to Chicago"\n\nJust tell me your origin and destination cities, and I\'ll guide you on how to search for options! You can also use the search form on the left for detailed searches with specific dates. ✈️'
+    // Add current user message
+    conversationMessages.push({
+      role: 'user',
+      content: userMessage
     });
+
+    // Call Groq API
+    const completion = await groq.chat.completions.create({
+      messages: conversationMessages,
+      model: 'llama-3.3-70b-versatile', // Using Llama 3.3 70B model - fast and capable
+      temperature: 0.7,
+      max_tokens: 800, // Increased to accommodate JSON responses
+      top_p: 1,
+      stream: false,
+      response_format: { type: 'json_object' } // Request JSON format
+    });
+
+    const rawResponse = completion.choices[0]?.message?.content || '{"response": "Sorry, I couldn\'t generate a response. Please try again.", "searchParams": null}';
+
+    // Try to parse the JSON response
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(rawResponse);
+    } catch (parseError) {
+      // If parsing fails, treat as plain text response
+      console.warn('Failed to parse JSON response, using as plain text:', parseError);
+      parsedResponse = {
+        response: rawResponse,
+        searchParams: null
+      };
+    }
+
+    // Validate and clean search parameters if present
+    let searchParams = null;
+    if (parsedResponse.searchParams) {
+      const params = parsedResponse.searchParams;
+      console.log('[CHAT] Raw searchParams from LLM:', JSON.stringify(params));
+      
+      // Only include searchParams if we have at least origin and destination
+      if (params.from && params.to) {
+        // Convert dates to YYYY-MM-DD format if provided
+        const formatDate = (dateStr) => {
+          if (!dateStr || dateStr === 'null' || dateStr === null) return null;
+          
+          try {
+            const trimmed = dateStr.trim();
+            const DEFAULT_YEAR = 2026; // Default year when not specified
+            
+            // Handle MM/DD/YYYY or M/D/YYYY format explicitly (US format)
+            const slashFormat = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = trimmed.match(slashFormat);
+            
+            if (match) {
+              // Parse as MM/DD/YYYY (US format) - the prompt instructs the LLM to use this format
+              const month = parseInt(match[1], 10);
+              const day = parseInt(match[2], 10);
+              const year = parseInt(match[3], 10);
+              
+              // Log for debugging
+              console.log(`[DATE PARSING] Input: "${trimmed}" -> Month: ${month}, Day: ${day}, Year: ${year}`);
+              
+              // Validate month and day ranges
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const date = new Date(year, month - 1, day); // month is 0-indexed in Date
+                if (!isNaN(date.getTime())) {
+                  const yearStr = date.getFullYear().toString();
+                  const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+                  const dayStr = date.getDate().toString().padStart(2, '0');
+                  const result = `${yearStr}-${monthStr}-${dayStr}`;
+                  console.log(`[DATE PARSING] Result: "${result}"`);
+                  return result;
+                }
+              }
+            }
+            
+            // Handle MM/DD format (without year) - default to 2026
+            const slashFormatNoYear = /^(\d{1,2})\/(\d{1,2})$/;
+            const matchNoYear = trimmed.match(slashFormatNoYear);
+            if (matchNoYear) {
+              const month = parseInt(matchNoYear[1], 10);
+              const day = parseInt(matchNoYear[2], 10);
+              console.log(`[DATE PARSING] Input: "${trimmed}" -> Month: ${month}, Day: ${day}, Year: ${DEFAULT_YEAR} (default)`);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const date = new Date(DEFAULT_YEAR, month - 1, day);
+                if (!isNaN(date.getTime())) {
+                  const yearStr = date.getFullYear().toString();
+                  const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+                  const dayStr = date.getDate().toString().padStart(2, '0');
+                  const result = `${yearStr}-${monthStr}-${dayStr}`;
+                  console.log(`[DATE PARSING] Result: "${result}"`);
+                  return result;
+                }
+              }
+            }
+            
+            // Try parsing as ISO format (YYYY-MM-DD) first - most reliable
+            const isoFormat = /^(\d{4})-(\d{2})-(\d{2})$/;
+            const isoMatch = trimmed.match(isoFormat);
+            if (isoMatch) {
+              const year = parseInt(isoMatch[1], 10);
+              const month = parseInt(isoMatch[2], 10);
+              const day = parseInt(isoMatch[3], 10);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return trimmed; // Already in correct format
+              }
+            }
+            
+            // Handle MM-DD format (without year) - default to 2026
+            const isoFormatNoYear = /^(\d{2})-(\d{2})$/;
+            const isoMatchNoYear = trimmed.match(isoFormatNoYear);
+            if (isoMatchNoYear) {
+              const month = parseInt(isoMatchNoYear[1], 10);
+              const day = parseInt(isoMatchNoYear[2], 10);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const result = `${DEFAULT_YEAR}-${trimmed}`;
+                console.log(`[DATE PARSING] Input: "${trimmed}" -> Result: "${result}" (default year ${DEFAULT_YEAR})`);
+                return result;
+              }
+            }
+            
+            // Last resort: Try parsing with Date constructor (unreliable, but better than nothing)
+            const date = new Date(trimmed);
+            if (!isNaN(date.getTime())) {
+              // If the year is less than 2026, assume it should be 2026
+              const parsedYear = date.getFullYear();
+              if (parsedYear < 2026) {
+                date.setFullYear(2026);
+              }
+              return date.toISOString().split('T')[0];
+            }
+            
+            return null;
+          } catch {
+            return null;
+          }
+        };
+
+        searchParams = {
+          from: params.from.trim(),
+          to: params.to.trim(),
+          departDate: formatDate(params.departDate) || null,
+          returnDate: formatDate(params.returnDate) || null,
+          tripType: (params.tripType === 'roundtrip' || params.returnDate) ? 'roundtrip' : 'oneway',
+          sortBy: (params.sortBy === 'time') ? 'time' : 'price'
+        };
+
+        // If it's a round trip but no return date, set tripType to oneway
+        if (searchParams.tripType === 'roundtrip' && !searchParams.returnDate) {
+          searchParams.tripType = 'oneway';
+        }
+      }
+    }
+
+    return res.json({
+      response: parsedResponse.response || rawResponse,
+      searchParams: searchParams
+    });
+
   } catch (error) {
     console.error('Chat error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Provide a helpful fallback response on error
+    const errorMessage = error.message || 'Unknown error';
+    return res.status(500).json({ 
+      error: 'Failed to get chatbot response',
+      message: errorMessage,
+      response: 'Sorry, I encountered an error processing your request. Please try again later, or use the search form on the left to find travel options directly. ✈️'
+    });
   }
 });
 

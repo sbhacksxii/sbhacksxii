@@ -1,12 +1,71 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-function SearchForm({ onSearch, loading }) {
-  const [startLocation, setStartLocation] = useState('')
-  const [endLocation, setEndLocation] = useState('')
-  const [departDate, setDepartDate] = useState('')
-  const [returnDate, setReturnDate] = useState('')
-  const [tripType, setTripType] = useState('oneway')
-  const [sortBy, setSortBy] = useState('price')
+function SearchForm({ onSearch, loading, formValues, onFormValuesChange }) {
+  // Use controlled props if provided, otherwise use internal state
+  const [internalStartLocation, setInternalStartLocation] = useState('')
+  const [internalEndLocation, setInternalEndLocation] = useState('')
+  const [internalDepartDate, setInternalDepartDate] = useState('')
+  const [internalReturnDate, setInternalReturnDate] = useState('')
+  const [internalTripType, setInternalTripType] = useState('oneway')
+  const [internalSortBy, setInternalSortBy] = useState('price')
+
+  // Use controlled values if provided, otherwise use internal state
+  const startLocation = formValues?.from ?? internalStartLocation
+  const endLocation = formValues?.to ?? internalEndLocation
+  const departDate = formValues?.departDate ?? internalDepartDate
+  const returnDate = formValues?.returnDate ?? internalReturnDate
+  const tripType = formValues?.tripType ?? internalTripType
+  const sortBy = formValues?.sortBy ?? internalSortBy
+
+  // Update internal state when controlled props change
+  useEffect(() => {
+    if (formValues) {
+      if (formValues.from !== undefined) setInternalStartLocation(formValues.from)
+      if (formValues.to !== undefined) setInternalEndLocation(formValues.to)
+      if (formValues.departDate !== undefined) setInternalDepartDate(formValues.departDate)
+      if (formValues.returnDate !== undefined) setInternalReturnDate(formValues.returnDate)
+      if (formValues.tripType !== undefined) setInternalTripType(formValues.tripType)
+      if (formValues.sortBy !== undefined) setInternalSortBy(formValues.sortBy)
+    }
+  }, [formValues])
+
+  // Helper functions to update values
+  const updateStartLocation = (value) => {
+    setInternalStartLocation(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, from: value })
+    }
+  }
+  const updateEndLocation = (value) => {
+    setInternalEndLocation(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, to: value })
+    }
+  }
+  const updateDepartDate = (value) => {
+    setInternalDepartDate(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, departDate: value })
+    }
+  }
+  const updateReturnDate = (value) => {
+    setInternalReturnDate(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, returnDate: value })
+    }
+  }
+  const updateTripType = (value) => {
+    setInternalTripType(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, tripType: value })
+    }
+  }
+  const updateSortBy = (value) => {
+    setInternalSortBy(value)
+    if (onFormValuesChange && formValues) {
+      onFormValuesChange({ ...formValues, sortBy: value })
+    }
+  }
 
   // Get today's date in YYYY-MM-DD format for min date
   const today = new Date().toISOString().split('T')[0]
@@ -38,7 +97,7 @@ function SearchForm({ onSearch, loading }) {
               name="tripType"
               value="oneway"
               checked={tripType === 'oneway'}
-              onChange={(e) => setTripType(e.target.value)}
+              onChange={(e) => updateTripType(e.target.value)}
               className="mr-2 text-indigo-600 focus:ring-indigo-500"
             />
             <span className="text-sm font-medium text-gray-700">One Way</span>
@@ -49,7 +108,7 @@ function SearchForm({ onSearch, loading }) {
               name="tripType"
               value="roundtrip"
               checked={tripType === 'roundtrip'}
-              onChange={(e) => setTripType(e.target.value)}
+              onChange={(e) => updateTripType(e.target.value)}
               className="mr-2 text-indigo-600 focus:ring-indigo-500"
             />
             <span className="text-sm font-medium text-gray-700">Round Trip</span>
@@ -66,7 +125,7 @@ function SearchForm({ onSearch, loading }) {
               type="text"
               id="start"
               value={startLocation}
-              onChange={(e) => setStartLocation(e.target.value)}
+              onChange={(e) => updateStartLocation(e.target.value)}
               placeholder="City or airport (e.g., LAX, Los Angeles)"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
@@ -81,7 +140,7 @@ function SearchForm({ onSearch, loading }) {
               type="text"
               id="end"
               value={endLocation}
-              onChange={(e) => setEndLocation(e.target.value)}
+              onChange={(e) => updateEndLocation(e.target.value)}
               placeholder="City or airport (e.g., JFK, New York)"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
@@ -99,7 +158,7 @@ function SearchForm({ onSearch, loading }) {
               type="date"
               id="departDate"
               value={departDate}
-              onChange={(e) => setDepartDate(e.target.value)}
+              onChange={(e) => updateDepartDate(e.target.value)}
               min={today}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
@@ -115,7 +174,7 @@ function SearchForm({ onSearch, loading }) {
                 type="date"
                 id="returnDate"
                 value={returnDate}
-                onChange={(e) => setReturnDate(e.target.value)}
+                onChange={(e) => updateReturnDate(e.target.value)}
                 min={departDate || today}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 required={tripType === 'roundtrip'}
@@ -132,7 +191,7 @@ function SearchForm({ onSearch, loading }) {
           <select
             id="sortBy"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => updateSortBy(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="price">Price (Lowest First)</option>
