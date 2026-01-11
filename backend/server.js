@@ -15,6 +15,8 @@ import {
   buildConnections, 
   findPotentialHubs, 
   getMajorHubCodes,
+  getHubsInCorridor,
+  DEFAULT_CORRIDOR_WIDTH_MILES,
   MAJOR_HUB_AIRPORTS
 } from './services/connectionService.js';
 
@@ -70,6 +72,7 @@ async function checkDatabase(searchParams) {
   console.log('📊 [DATABASE] Checking for cached results...');
   console.log(`   Route: ${from} → ${to}`);
   console.log(`   Date: ${departDate}${returnDate ? ` - ${returnDate}` : ''}`);
+  console.log(`   Trip Type: ${tripType || 'oneway'}`);
   
   const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
   const client = new MongoClient(uri); 
@@ -80,14 +83,29 @@ async function checkDatabase(searchParams) {
     await client.connect(); 
     const db = client.db(dbName); 
     const collection = db.collection(collectionName); 
-    const query = {'departure.location': from, 'arrival.location': to, departDate: departDate, returnDate: returnDate || null, type: tripType};
+    
+    // Use case-insensitive regex for location matching
+    // Also check for the departDate and trip type to get relevant cached data
+    const query = {
+      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
+      departDate: departDate,
+      // Filter by trip type to ensure one-way and round-trip results are cached separately
+      type: tripType === 'roundtrip' ? 'roundtrip' : 'oneway'
+    };
+    
+    // For round-trip searches, also match the specific return date
+    if (tripType === 'roundtrip' && returnDate) {
+      query.returnDate = returnDate;
+    }
+    
     const cachedResults = await collection.find(query).toArray();
     if (cachedResults && cachedResults.length > 0) {
-     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached results`);
+     console.log(`✅ [DATABASE] Found ${cachedResults.length} cached ${tripType} results`);
      return cachedResults;
     }
 
-    console.log('❌ [DATABASE] No cached results found, will use scraper');
+    console.log(`❌ [DATABASE] No cached ${tripType} results found, will use scraper`);
     return null;
 
    } catch(error) {
@@ -99,13 +117,15 @@ async function checkDatabase(searchParams) {
 }
 
 /**
- * Fetch flights from database for a specific route (without date constraint for connections)
+ * Fetch ONE-WAY flights from database for a specific route (for connections)
+ * Connections always use one-way pricing since roundtrip prices differ
  */
 async function fetchFlightsFromDBForRoute(from, to, client, collection) {
   try {
     const query = {
       'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
-      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') }
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') },
+      type: 'oneway' // Only fetch one-way flights for connections
     };
     const flights = await collection.find(query).toArray();
     return flights;
@@ -118,9 +138,21 @@ async function fetchFlightsFromDBForRoute(from, to, client, collection) {
 /**
  * Fetch hub flights for connections
  * Checks database first, then scrapes missing routes if needed
+ * 
+ * IMPORTANT: Connections are always one-way. This function only fetches one-way flights.
+ * 
+ * For flight-to-flight connections, uses geographic corridor filtering to only
+ * search for hubs that lie between origin and destination.
+ * 
+ * @param {string} from - Origin airport code
+ * @param {string} to - Destination airport code
+ * @param {string} departDate - Departure date
+ * @param {number} corridorWidthMiles - Width of corridor for flight-flight (default 200)
  */
-async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
+async function fetchHubFlights(from, to, departDate, corridorWidthMiles = DEFAULT_CORRIDOR_WIDTH_MILES) {
   console.log('\n🔗 [HUBS] Fetching flight data for connection hubs...');
+  console.log(`   ℹ️  Connections use ONE-WAY flights only`);
+  console.log(`   📏 Corridor width: ${corridorWidthMiles} miles`);
   
   const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
   const client = new MongoClient(uri);
@@ -130,22 +162,19 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
     const db = client.db("TravelData");
     const collection = db.collection('PlaneData');
     
-    // Get relevant hubs for this route
-    const hubs = await findPotentialHubs(from, to, false);
+    // Get relevant hubs for this route (with corridor filtering for flight-flight)
+    const hubs = await findPotentialHubs(from, to, false, corridorWidthMiles);
     
     // Collect hub codes to search
     const amtrakHubsTo = hubs.flightToAmtrak?.hubs || [];
     const amtrakHubsFrom = hubs.amtrakToFlight?.hubs || [];
     
-    // Get major flight hubs (limit to top 5 for performance)
-    const flightHubs = getMajorHubCodes().filter(h => 
-      h.toUpperCase() !== from.toUpperCase() && 
-      h.toUpperCase() !== to.toUpperCase()
-    ).slice(0, 5);
+    // Get flight hubs from the corridor (already filtered by findPotentialHubs)
+    const flightHubsInCorridor = hubs.flightToFlight?.hubs || [];
     
     console.log(`   Amtrak hubs (to dest): ${amtrakHubsTo.join(', ') || 'none'}`);
     console.log(`   Amtrak hubs (from origin): ${amtrakHubsFrom.join(', ') || 'none'}`);
-    console.log(`   Flight hubs: ${flightHubs.join(', ')}`);
+    console.log(`   Flight hubs in corridor: ${flightHubsInCorridor.join(', ') || 'none'}`);
     
     const allHubFlights = [];
     const routesToScrape = [];
@@ -168,42 +197,56 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
     }
     
     // Routes for Flight → Flight connections (origin → hub → destination)
-    for (const hub of flightHubs) {
+    // Only search hubs that are in the geographic corridor
+    for (const hub of flightHubsInCorridor) {
       routesToCheck.push({ from, to: hub, type: 'flight-flight-leg1' });
       routesToCheck.push({ from: hub, to, type: 'flight-flight-leg2' });
     }
     
-    // Check database for each route
+    // Check database for each route (only one-way flights)
     console.log(`\n   Checking ${routesToCheck.length} hub routes in database...`);
     
     for (const route of routesToCheck) {
-      const dbFlights = await fetchFlightsFromDBForRoute(route.from, route.to, client, collection);
+      // Query for one-way flights only
+      const query = {
+        'departure.location': { $regex: new RegExp(`^${route.from}$`, 'i') },
+        'arrival.location': { $regex: new RegExp(`^${route.to}$`, 'i') },
+        type: 'oneway'
+      };
       
-      if (dbFlights.length > 0) {
-        console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} flights`);
-        allHubFlights.push(...dbFlights);
-      } else {
-        // Mark for scraping
+      try {
+        const dbFlights = await collection.find(query).toArray();
+        
+        if (dbFlights.length > 0) {
+          console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} one-way flights`);
+          allHubFlights.push(...dbFlights);
+        } else {
+          // Mark for scraping
+          routesToScrape.push(route);
+          console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
+        }
+      } catch (error) {
+        console.error(`   ❌ DB error for ${route.from}→${route.to}: ${error.message}`);
         routesToScrape.push(route);
-        console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
       }
     }
     
     // Scrape missing routes (limit to avoid timeout)
+    // Always scrape as ONE-WAY (null returnDate)
     const MAX_SCRAPES = 3; // Limit concurrent scrapes to avoid long wait times
     const scrapesToRun = routesToScrape.slice(0, MAX_SCRAPES);
     
     if (scrapesToRun.length > 0) {
-      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes (max ${MAX_SCRAPES})...`);
+      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes as ONE-WAY (max ${MAX_SCRAPES})...`);
       
       for (const route of scrapesToRun) {
         try {
-          console.log(`   Scraping: ${route.from}→${route.to}...`);
+          console.log(`   Scraping: ${route.from}→${route.to} (one-way)...`);
           const scrapedFlights = await scrapeGoogleFlights(
             route.from,
             route.to,
             departDate,
-            tripType === 'roundtrip' ? returnDate : null
+            null // ALWAYS null - connections use one-way flights only
           );
           
           if (scrapedFlights && scrapedFlights.length > 0) {
@@ -233,7 +276,7 @@ async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
       }
     }
     
-    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length}`);
+    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length} (all one-way)`);
     return uniqueFlights;
     
   } catch (error) {
@@ -348,8 +391,182 @@ function formatTrainResults(trainResults, from, to, departDate, returnDate) {
 }
 
 /**
+ * Build mixed roundtrip itineraries combining one-way options
+ * Creates combinations like: Amtrak outbound + Flight return, Flight outbound + Amtrak return
+ * 
+ * @param {Array} outboundFlights - One-way flights from origin to destination
+ * @param {Array} returnFlights - One-way flights from destination to origin
+ * @param {Array} outboundTrains - One-way Amtrak from origin to destination
+ * @param {Array} returnTrains - One-way Amtrak from destination to origin
+ * @param {string} from - Origin location
+ * @param {string} to - Destination location
+ * @param {string} departDate - Departure date
+ * @param {string} returnDate - Return date
+ * @returns {Array} Array of mixed roundtrip itineraries
+ */
+function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrains, returnTrains, from, to, departDate, returnDate) {
+  const mixedOptions = [];
+  
+  console.log('\n🔀 [MIXED ROUNDTRIP] Building mixed roundtrip options...');
+  console.log(`   Outbound flights: ${outboundFlights?.length || 0}`);
+  console.log(`   Return flights: ${returnFlights?.length || 0}`);
+  console.log(`   Outbound trains: ${outboundTrains?.length || 0}`);
+  console.log(`   Return trains: ${returnTrains?.length || 0}`);
+  
+  // Option 1: Amtrak outbound + Flight return
+  if (outboundTrains && outboundTrains.length > 0 && returnFlights && returnFlights.length > 0) {
+    console.log('   Building: Amtrak outbound + Flight return combinations');
+    
+    // Use top 3 trains and top 3 flights to avoid explosion of combinations
+    const topOutboundTrains = outboundTrains.slice(0, 3);
+    const topReturnFlights = returnFlights.slice(0, 3);
+    
+    for (const train of topOutboundTrains) {
+      for (const flight of topReturnFlights) {
+        const totalPrice = (train.price || 0) + (flight.price || 0);
+        const totalDuration = (train.durationMinutes || 0) + (flight.durationMinutes || 0);
+        
+        mixedOptions.push({
+          type: 'mixed-roundtrip',
+          mixedType: 'amtrak-outbound-flight-return',
+          outbound: {
+            legType: 'train',
+            departure: train.departure,
+            arrival: train.arrival,
+            duration: train.duration,
+            durationMinutes: train.durationMinutes,
+            price: train.price,
+            priceFormatted: train.priceFormatted,
+            provider: train.provider || 'Amtrak',
+            stops: train.stops,
+            date: departDate,
+            source: 'Amtrak'
+          },
+          return: {
+            legType: 'flight',
+            departure: flight.departure,
+            arrival: flight.arrival,
+            duration: flight.duration,
+            durationMinutes: flight.durationMinutes,
+            price: flight.price,
+            priceFormatted: flight.priceFormatted,
+            provider: flight.provider,
+            stops: flight.stops,
+            date: returnDate,
+            source: 'Google Flights'
+          },
+          departure: {
+            location: from,
+            time: train.departure?.time
+          },
+          arrival: {
+            location: to,
+            time: train.arrival?.time
+          },
+          departDate: departDate,
+          returnDate: returnDate,
+          duration: `${formatDuration(totalDuration)} total`,
+          durationMinutes: totalDuration,
+          price: totalPrice,
+          priceFormatted: `$${totalPrice.toFixed(2)}`,
+          currency: 'USD',
+          source: 'Mixed Roundtrip',
+          provider: `${train.provider || 'Amtrak'} + ${flight.provider || 'Flight'}`,
+          stops: `Amtrak outbound, Flight return`,
+          bags: flight.bags
+        });
+      }
+    }
+  }
+  
+  // Option 2: Flight outbound + Amtrak return
+  if (outboundFlights && outboundFlights.length > 0 && returnTrains && returnTrains.length > 0) {
+    console.log('   Building: Flight outbound + Amtrak return combinations');
+    
+    // Use top 3 flights and top 3 trains to avoid explosion of combinations
+    const topOutboundFlights = outboundFlights.slice(0, 3);
+    const topReturnTrains = returnTrains.slice(0, 3);
+    
+    for (const flight of topOutboundFlights) {
+      for (const train of topReturnTrains) {
+        const totalPrice = (flight.price || 0) + (train.price || 0);
+        const totalDuration = (flight.durationMinutes || 0) + (train.durationMinutes || 0);
+        
+        mixedOptions.push({
+          type: 'mixed-roundtrip',
+          mixedType: 'flight-outbound-amtrak-return',
+          outbound: {
+            legType: 'flight',
+            departure: flight.departure,
+            arrival: flight.arrival,
+            duration: flight.duration,
+            durationMinutes: flight.durationMinutes,
+            price: flight.price,
+            priceFormatted: flight.priceFormatted,
+            provider: flight.provider,
+            stops: flight.stops,
+            date: departDate,
+            source: 'Google Flights'
+          },
+          return: {
+            legType: 'train',
+            departure: train.departure,
+            arrival: train.arrival,
+            duration: train.duration,
+            durationMinutes: train.durationMinutes,
+            price: train.price,
+            priceFormatted: train.priceFormatted,
+            provider: train.provider || 'Amtrak',
+            stops: train.stops,
+            date: returnDate,
+            source: 'Amtrak'
+          },
+          departure: {
+            location: from,
+            time: flight.departure?.time
+          },
+          arrival: {
+            location: to,
+            time: flight.arrival?.time
+          },
+          departDate: departDate,
+          returnDate: returnDate,
+          duration: `${formatDuration(totalDuration)} total`,
+          durationMinutes: totalDuration,
+          price: totalPrice,
+          priceFormatted: `$${totalPrice.toFixed(2)}`,
+          currency: 'USD',
+          source: 'Mixed Roundtrip',
+          provider: `${flight.provider || 'Flight'} + ${train.provider || 'Amtrak'}`,
+          stops: `Flight outbound, Amtrak return`,
+          bags: flight.bags
+        });
+      }
+    }
+  }
+  
+  console.log(`   ✅ Built ${mixedOptions.length} mixed roundtrip options`);
+  
+  // Sort by price
+  mixedOptions.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+  
+  return mixedOptions;
+}
+
+/**
  * Search API endpoint
  * POST /api/search
+ * 
+ * For ONE-WAY trips:
+ *   - Gets direct flights and trains
+ *   - Builds multi-modal connections (flight+amtrak, amtrak+flight, flight+flight via hub)
+ * 
+ * For ROUNDTRIP trips:
+ *   - Gets roundtrip flights from Google Flights
+ *   - Builds mixed roundtrip options:
+ *     - Amtrak outbound + Flight return
+ *     - Flight outbound + Amtrak return
+ *   - Does NOT build connections (too much data complexity for roundtrip)
  */
 app.post('/api/search', async (req, res) => {
   try {
@@ -374,21 +591,135 @@ app.post('/api/search', async (req, res) => {
       });
     }
 
+    // Validate roundtrip has return date
+    if (tripType === 'roundtrip' && !returnDate) {
+      return res.status(400).json({
+        error: 'Return date required for roundtrip',
+        required: ['returnDate']
+      });
+    }
+
+    const isRoundtrip = tripType === 'roundtrip' && returnDate;
+    
+    // =====================================================
+    // ROUNDTRIP SEARCH LOGIC
+    // =====================================================
+    if (isRoundtrip) {
+      console.log('\n🔄 [ROUNDTRIP] Processing roundtrip search...');
+      console.log('   Note: Connections are skipped for roundtrip (too much data)');
+      
+      const allResults = [];
+      
+      // Step 1: Get roundtrip flights from Google Flights
+      console.log('\n✈️ [ROUNDTRIP FLIGHTS] Fetching roundtrip flights...');
+      let roundtripFlights = await checkDatabase({ from, to, departDate, returnDate, tripType: 'roundtrip' });
+      
+      if (!roundtripFlights) {
+        console.log('🌐 [SCRAPER] Scraping roundtrip flights...');
+        roundtripFlights = await scrapeGoogleFlights(from, to, departDate, returnDate);
+      }
+      
+      if (roundtripFlights && roundtripFlights.length > 0) {
+        console.log(`✅ Found ${roundtripFlights.length} roundtrip flight options`);
+        allResults.push(...roundtripFlights);
+      }
+      
+      // Step 2: Get one-way Amtrak options (outbound: from→to)
+      console.log('\n🚂 [AMTRAK OUTBOUND] Fetching Amtrak from→to...');
+      let outboundTrains = [];
+      try {
+        const rawOutboundTrains = await getGroupedTrainResults(from, to, 5);
+        if (rawOutboundTrains && rawOutboundTrains.length > 0) {
+          outboundTrains = formatTrainResults(rawOutboundTrains, from, to, departDate, null);
+          console.log(`✅ Found ${outboundTrains.length} outbound Amtrak options`);
+        }
+      } catch (error) {
+        console.error('⚠️ Error fetching outbound trains:', error.message);
+      }
+      
+      // Step 3: Get one-way Amtrak options (return: to→from)
+      console.log('\n🚂 [AMTRAK RETURN] Fetching Amtrak to→from...');
+      let returnTrains = [];
+      try {
+        const rawReturnTrains = await getGroupedTrainResults(to, from, 5);
+        if (rawReturnTrains && rawReturnTrains.length > 0) {
+          returnTrains = formatTrainResults(rawReturnTrains, to, from, returnDate, null);
+          console.log(`✅ Found ${returnTrains.length} return Amtrak options`);
+        }
+      } catch (error) {
+        console.error('⚠️ Error fetching return trains:', error.message);
+      }
+      
+      // Step 4: Get one-way flights for outbound (from→to) if not already included
+      console.log('\n✈️ [OUTBOUND FLIGHTS] Checking for one-way outbound flights...');
+      let outboundFlights = await checkDatabase({ from, to, departDate, returnDate: null, tripType: 'oneway' });
+      
+      if (!outboundFlights) {
+        console.log('🌐 [SCRAPER] Scraping one-way outbound flights...');
+        outboundFlights = await scrapeGoogleFlights(from, to, departDate, null);
+      }
+      console.log(`✅ Found ${outboundFlights?.length || 0} one-way outbound flights`);
+      
+      // Step 5: Get one-way flights for return (to→from)
+      console.log('\n✈️ [RETURN FLIGHTS] Fetching one-way return flights...');
+      let returnFlights = await checkDatabase({ from: to, to: from, departDate: returnDate, returnDate: null, tripType: 'oneway' });
+      
+      if (!returnFlights) {
+        console.log('🌐 [SCRAPER] Scraping one-way return flights...');
+        returnFlights = await scrapeGoogleFlights(to, from, returnDate, null);
+      }
+      console.log(`✅ Found ${returnFlights?.length || 0} one-way return flights`);
+      
+      // Step 6: Build mixed roundtrip options
+      const mixedOptions = buildMixedRoundtripOptions(
+        outboundFlights,
+        returnFlights,
+        outboundTrains,
+        returnTrains,
+        from,
+        to,
+        departDate,
+        returnDate
+      );
+      
+      if (mixedOptions && mixedOptions.length > 0) {
+        allResults.push(...mixedOptions);
+      }
+      
+      // Step 7: Sort all results
+      if (allResults.length > 0) {
+        if (sortBy === 'price') {
+          allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+        } else if (sortBy === 'time') {
+          allResults.sort((a, b) => (a.durationMinutes || Infinity) - (b.durationMinutes || Infinity));
+        }
+      }
+      
+      console.log(`\n✅ [ROUNDTRIP] Returning ${allResults.length} total results`);
+      console.log(`   - Roundtrip flights: ${roundtripFlights?.length || 0}`);
+      console.log(`   - Mixed roundtrip options: ${mixedOptions?.length || 0}`);
+      
+      return res.json(allResults || []);
+    }
+    
+    // =====================================================
+    // ONE-WAY SEARCH LOGIC (existing behavior)
+    // =====================================================
+    console.log('\n➡️ [ONE-WAY] Processing one-way search...');
+    
     // Step 1: Check database first (placeholder)
     let flightResults = await checkDatabase({ from, to, departDate, returnDate, tripType});
 
     // Step 2: If no database results, use web scraper
+    // Note: The scraper (flightScraper.js) automatically saves results to MongoDB
     if (!flightResults) {
       console.log('🌐 [SCRAPER] Starting web scraper...');
       flightResults = await scrapeGoogleFlights(
         from,
         to,
         departDate,
-        tripType === 'roundtrip' ? returnDate : null
+        null // Always one-way for one-way searches
       );
-      
-      // TODO: Save results to database for caching
-      // await db.flights.insertMany(results.map(r => ({ ...r, scrapedAt: new Date() })));
     }
 
     // Step 3: Fetch train data in parallel
@@ -398,7 +729,7 @@ app.post('/api/search', async (req, res) => {
       const rawTrainResults = await getGroupedTrainResults(from, to, 5); // Get top 5 grouped trains
       
       if (rawTrainResults && rawTrainResults.length > 0) {
-        trainResults = formatTrainResults(rawTrainResults, from, to, departDate, returnDate);
+        trainResults = formatTrainResults(rawTrainResults, from, to, departDate, null);
         console.log(`✅ [TRAINS] Found ${trainResults.length} train options`);
       } else {
         console.log('ℹ️ [TRAINS] No train routes found for this route');
@@ -409,10 +740,12 @@ app.post('/api/search', async (req, res) => {
     }
 
     // Step 4: Fetch hub flights for connections
-    // This populates the database with flights to/from major hubs
+    // This populates the database with ONE-WAY flights to/from major hubs
+    // Uses geographic corridor filtering for flight-to-flight connections
+    // Corridor width can be adjusted (default 200 miles)
     let hubFlights = [];
     try {
-      hubFlights = await fetchHubFlights(from, to, departDate, returnDate, tripType);
+      hubFlights = await fetchHubFlights(from, to, departDate); // Always one-way for connections
     } catch (hubError) {
       console.error('⚠️ [HUBS] Error fetching hub flights:', hubError.message);
     }
@@ -443,7 +776,7 @@ app.post('/api/search', async (req, res) => {
           from, 
           to, 
           departDate, 
-          returnDate,
+          null, // Always null for one-way
           false // verbose off for production
         );
         console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
