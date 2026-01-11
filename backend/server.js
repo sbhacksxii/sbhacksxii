@@ -263,6 +263,7 @@ Always respond in valid JSON format.`;
     let searchParams = null;
     if (parsedResponse.searchParams) {
       const params = parsedResponse.searchParams;
+      console.log('[CHAT] Raw searchParams from LLM:', JSON.stringify(params));
       
       // Only include searchParams if we have at least origin and destination
       if (params.from && params.to) {
@@ -271,14 +272,20 @@ Always respond in valid JSON format.`;
           if (!dateStr || dateStr === 'null' || dateStr === null) return null;
           
           try {
-            // Handle MM/DD/YYYY or M/D/YYYY format explicitly
+            const trimmed = dateStr.trim();
+            
+            // Handle MM/DD/YYYY or M/D/YYYY format explicitly (US format)
             const slashFormat = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-            const match = dateStr.trim().match(slashFormat);
+            const match = trimmed.match(slashFormat);
             
             if (match) {
+              // Parse as MM/DD/YYYY (US format) - the prompt instructs the LLM to use this format
               const month = parseInt(match[1], 10);
               const day = parseInt(match[2], 10);
               const year = parseInt(match[3], 10);
+              
+              // Log for debugging
+              console.log(`[DATE PARSING] Input: "${trimmed}" -> Month: ${month}, Day: ${day}, Year: ${year}`);
               
               // Validate month and day ranges
               if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
@@ -287,13 +294,27 @@ Always respond in valid JSON format.`;
                   const yearStr = date.getFullYear().toString();
                   const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
                   const dayStr = date.getDate().toString().padStart(2, '0');
-                  return `${yearStr}-${monthStr}-${dayStr}`;
+                  const result = `${yearStr}-${monthStr}-${dayStr}`;
+                  console.log(`[DATE PARSING] Result: "${result}"`);
+                  return result;
                 }
               }
             }
             
-            // Try parsing as ISO format (YYYY-MM-DD) or other standard formats
-            const date = new Date(dateStr);
+            // Try parsing as ISO format (YYYY-MM-DD) first - most reliable
+            const isoFormat = /^(\d{4})-(\d{2})-(\d{2})$/;
+            const isoMatch = trimmed.match(isoFormat);
+            if (isoMatch) {
+              const year = parseInt(isoMatch[1], 10);
+              const month = parseInt(isoMatch[2], 10);
+              const day = parseInt(isoMatch[3], 10);
+              if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return trimmed; // Already in correct format
+              }
+            }
+            
+            // Last resort: Try parsing with Date constructor (unreliable, but better than nothing)
+            const date = new Date(trimmed);
             if (!isNaN(date.getTime())) {
               return date.toISOString().split('T')[0];
             }
