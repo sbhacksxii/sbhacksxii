@@ -88,5 +88,35 @@
     "name": "New Orleans Union Passenger Terminal",
     "city": "New Orleans",
     "state": "LA"
+  },
+  {
+    "code": "SFC",
+    "name": "San Francisco Ferry Building",
+    "city": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "code": "OMA",
+    "name": "Omaha Station",
+    "city": "Omaha",
+    "state": "NE"
+  },
+  {
+    "code": "SLC",
+    "name": "Salt Lake City Station",
+    "city": "Salt Lake City",
+    "state": "UT"
+  },
+  {
+    "code": "KYC",
+    "name": "Kansas City Union Station",
+    "city": "Kansas City",
+    "state": "MO"
+  },
+  {
+    "code": "SPK",
+    "name": "Spokane Station",
+    "city": "Spokane",
+    "state": "WA"
   }
 ]
