@@ -2,6 +2,7 @@ import { useState } from 'react'
 import SearchForm from './components/SearchForm'
 import ResultsDisplay from './components/ResultsDisplay'
 import Chatbot from './components/Chatbot'
+import logoImage from '../Basic_logo.png'
 import './App.css'
 
 function App() {
@@ -87,7 +88,10 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-indigo-600">✈️ Streamline</h1>
+              <h1 className="text-3xl font-bold text-indigo-600 flex items-center gap-2">
+                <img src={logoImage} alt="Streamline Logo" className="h-8 w-8" />
+                Streamline
+              </h1>
               <p className="text-gray-600 mt-1">Compare flights, trains, and buses in one place</p>
             </div>
             <a 
