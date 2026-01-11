@@ -105,7 +105,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
               <p className="text-sm text-gray-500 mt-1">
                 {flights.length > 0 && `${flights.length} flight${flights.length !== 1 ? 's' : ''}`}
                 {flights.length > 0 && trains.length > 0 && ' • '}
-                {trains.length > 0 && `${trains.length} train${trains.length !== 1 ? 's' : ''}`}
+                {trains.length > 0 && `${trains.length} bus/train route${trains.length !== 1 ? 's' : ''}`}
               </p>
             )}
           </div>
@@ -150,14 +150,14 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                   <div className="flex-1">
                     {/* Provider/Transport Type */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{isTrain ? '🚂' : '✈️'}</span>
+                      <span className="text-2xl">{isTrain ? '🚌' : '✈️'}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-gray-800">
                           {result.provider || (isTrain ? 'Amtrak' : 'Multiple Airlines')}
                         </span>
                         {isTrain && (
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                            Train
+                            Bus/Train
                           </span>
                         )}
                         {isFlight && (
@@ -215,7 +215,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                     )}
                     {isTrain && result.trainData && result.trainData.sampleCount > 1 && (
                       <p className="text-xs text-blue-600 mt-2">
-                        Average of {result.trainData.sampleCount} similar trains
+                        Average of {result.trainData.sampleCount} similar routes
                         {result.trainData.priceRange && (
                           <span className="text-gray-500 ml-1">
                             (${result.trainData.priceRange.min} - ${result.trainData.priceRange.max})

@@ -141,7 +141,7 @@ function App() {
                 <img src={logoImage} alt="Streamline Logo" className="h-8 w-8" />
                 Streamline
               </h1>
-              <p className="text-gray-600 mt-1">Compare flights, trains, and buses in one place</p>
+              <p className="text-gray-600 mt-1">Compare flights and bus/train routes in one place</p>
             </div>
             <a 
               href="mailto:streamlinetravelhelp@gmail.com"
