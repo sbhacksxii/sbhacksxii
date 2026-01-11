@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { MongoClient } from 'mongodb';
 
 /**
  * Google Flights Scraper Module
@@ -222,6 +223,11 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
   console.log('🔧 Chromium executable path:', executablePath || 'using bundled Chromium');
   
+  const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
+  const client = new MongoClient(uri); 
+  const dbName = "TravelData"; 
+  const collectionName = 'PlaneData';
+
   let browser;
   try {
     browser = await puppeteer.launch({
@@ -299,7 +305,14 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
       rawSummary: flight.rawSummary
     }));
     
-    return normalizedFlights;
+    await client.connect(); 
+    const db = client.db(dbName); 
+    const collection = db.collection(collectionName); 
+    await collection.insertMany(normalizedFlights); 
+    await client.close(); 
+
+    return normalizedFlights; 
+    
 
   } catch (error) {
     console.error('❌ Error scraping Google Flights:', error.message);
