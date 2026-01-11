@@ -18,6 +18,7 @@ function Chatbot({ onFormUpdate }) {
   const socketRef = useRef(null)
   const streamRef = useRef(null)
   const finalTranscriptTimeoutRef = useRef(null)
+  const lastSubmittedTranscriptRef = useRef('')
 
   // Get Deepgram API key from environment variable
   const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || ''
@@ -166,6 +167,11 @@ function Chatbot({ onFormUpdate }) {
 
   const toggleVoiceRecording = () => {
     if (isListening) {
+      // Clear any pending timeout FIRST to prevent race condition
+      if (finalTranscriptTimeoutRef.current) {
+        clearTimeout(finalTranscriptTimeoutRef.current)
+        finalTranscriptTimeoutRef.current = null
+      }
       // Stop recording and submit current transcript if available
       if (currentTranscript.trim()) {
         handleVoiceSubmit(currentTranscript)
@@ -192,14 +198,27 @@ function Chatbot({ onFormUpdate }) {
 
   // Handle voice transcript submission
   const handleVoiceSubmit = async (transcript) => {
-    if (!transcript.trim() || loading) return
+    const trimmedTranscript = transcript.trim()
+    if (!trimmedTranscript || loading) return
+    
+    // Prevent duplicate submissions of the same transcript
+    if (lastSubmittedTranscriptRef.current === trimmedTranscript) {
+      console.log('Chatbot: Duplicate transcript submission prevented:', trimmedTranscript)
+      return
+    }
 
-    const userMessage = { role: 'user', content: transcript }
+    // Mark this transcript as submitted
+    lastSubmittedTranscriptRef.current = trimmedTranscript
+
+    const userMessage = { role: 'user', content: trimmedTranscript }
     setMessages(prev => [...prev, userMessage])
     setCurrentTranscript('')
     setLoading(true)
 
-    await sendMessageToBackend(transcript)
+    await sendMessageToBackend(trimmedTranscript).finally(() => {
+      // Reset the ref after submission completes to allow resubmission of different messages
+      lastSubmittedTranscriptRef.current = ''
+    })
   }
 
   // Send message to backend
