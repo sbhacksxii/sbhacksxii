@@ -11,7 +11,11 @@ import {
   getAvailableRoutes,
   getGroupedTrainResults
 } from './services/amtrakService.js';
-import { buildConnections } from './services/connectionService.js';
+import { 
+  buildConnections, 
+  findPotentialHubs, 
+  getMajorHubCodes 
+} from './services/connectionService.js';
 
 dotenv.config();
 
@@ -90,6 +94,152 @@ async function checkDatabase(searchParams) {
      return null;
   } finally {
      await client.close();
+  }
+}
+
+/**
+ * Fetch flights from database for a specific route (without date constraint for connections)
+ */
+async function fetchFlightsFromDBForRoute(from, to, client, collection) {
+  try {
+    const query = {
+      'departure.location': { $regex: new RegExp(`^${from}$`, 'i') },
+      'arrival.location': { $regex: new RegExp(`^${to}$`, 'i') }
+    };
+    const flights = await collection.find(query).toArray();
+    return flights;
+  } catch (error) {
+    console.error(`   ❌ DB error for ${from}→${to}: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Fetch hub flights for connections
+ * Checks database first, then scrapes missing routes if needed
+ */
+async function fetchHubFlights(from, to, departDate, returnDate, tripType) {
+  console.log('\n🔗 [HUBS] Fetching flight data for connection hubs...');
+  
+  const uri = "mongodb+srv://johnsylvester_db_user:3bsbf7i6zrTFivhe@streamlinetravel.amyqwim.mongodb.net/?appName=StreamlineTravel";
+  const client = new MongoClient(uri);
+  
+  try {
+    await client.connect();
+    const db = client.db("TravelData");
+    const collection = db.collection('PlaneData');
+    
+    // Get relevant hubs for this route
+    const hubs = await findPotentialHubs(from, to, false);
+    
+    // Collect hub codes to search
+    const amtrakHubsTo = hubs.flightToAmtrak?.hubs || [];
+    const amtrakHubsFrom = hubs.amtrakToFlight?.hubs || [];
+    
+    // Get major flight hubs (limit to top 5 for performance)
+    const flightHubs = getMajorHubCodes().filter(h => 
+      h.toUpperCase() !== from.toUpperCase() && 
+      h.toUpperCase() !== to.toUpperCase()
+    ).slice(0, 5);
+    
+    console.log(`   Amtrak hubs (to dest): ${amtrakHubsTo.join(', ') || 'none'}`);
+    console.log(`   Amtrak hubs (from origin): ${amtrakHubsFrom.join(', ') || 'none'}`);
+    console.log(`   Flight hubs: ${flightHubs.join(', ')}`);
+    
+    const allHubFlights = [];
+    const routesToScrape = [];
+    
+    // Build list of routes we need
+    const routesToCheck = [];
+    
+    // Routes for Flight → Amtrak connections (origin → amtrak hub)
+    for (const hub of amtrakHubsTo) {
+      if (hub.toUpperCase() !== from.toUpperCase()) {
+        routesToCheck.push({ from, to: hub, type: 'flight-amtrak' });
+      }
+    }
+    
+    // Routes for Amtrak → Flight connections (amtrak hub → destination)
+    for (const hub of amtrakHubsFrom) {
+      if (hub.toUpperCase() !== to.toUpperCase()) {
+        routesToCheck.push({ from: hub, to, type: 'amtrak-flight' });
+      }
+    }
+    
+    // Routes for Flight → Flight connections (origin → hub → destination)
+    for (const hub of flightHubs) {
+      routesToCheck.push({ from, to: hub, type: 'flight-flight-leg1' });
+      routesToCheck.push({ from: hub, to, type: 'flight-flight-leg2' });
+    }
+    
+    // Check database for each route
+    console.log(`\n   Checking ${routesToCheck.length} hub routes in database...`);
+    
+    for (const route of routesToCheck) {
+      const dbFlights = await fetchFlightsFromDBForRoute(route.from, route.to, client, collection);
+      
+      if (dbFlights.length > 0) {
+        console.log(`   ✅ DB: ${route.from}→${route.to}: ${dbFlights.length} flights`);
+        allHubFlights.push(...dbFlights);
+      } else {
+        // Mark for scraping
+        routesToScrape.push(route);
+        console.log(`   ⏳ Missing: ${route.from}→${route.to} (will scrape)`);
+      }
+    }
+    
+    // Scrape missing routes (limit to avoid timeout)
+    const MAX_SCRAPES = 3; // Limit concurrent scrapes to avoid long wait times
+    const scrapesToRun = routesToScrape.slice(0, MAX_SCRAPES);
+    
+    if (scrapesToRun.length > 0) {
+      console.log(`\n   🌐 Scraping ${scrapesToRun.length} missing routes (max ${MAX_SCRAPES})...`);
+      
+      for (const route of scrapesToRun) {
+        try {
+          console.log(`   Scraping: ${route.from}→${route.to}...`);
+          const scrapedFlights = await scrapeGoogleFlights(
+            route.from,
+            route.to,
+            departDate,
+            tripType === 'roundtrip' ? returnDate : null
+          );
+          
+          if (scrapedFlights && scrapedFlights.length > 0) {
+            console.log(`   ✅ Scraped ${route.from}→${route.to}: ${scrapedFlights.length} flights`);
+            allHubFlights.push(...scrapedFlights);
+          } else {
+            console.log(`   ⚠️ No flights found: ${route.from}→${route.to}`);
+          }
+        } catch (scrapeError) {
+          console.error(`   ❌ Scrape failed ${route.from}→${route.to}: ${scrapeError.message}`);
+        }
+      }
+      
+      if (routesToScrape.length > MAX_SCRAPES) {
+        console.log(`   ℹ️ Skipped ${routesToScrape.length - MAX_SCRAPES} routes to avoid timeout`);
+      }
+    }
+    
+    // Deduplicate by _id
+    const uniqueFlights = [];
+    const seenIds = new Set();
+    for (const flight of allHubFlights) {
+      const id = flight._id?.toString() || JSON.stringify(flight);
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        uniqueFlights.push(flight);
+      }
+    }
+    
+    console.log(`   📊 Total hub flights collected: ${uniqueFlights.length}`);
+    return uniqueFlights;
+    
+  } catch (error) {
+    console.error('❌ [HUBS] Error fetching hub flights:', error.message);
+    return [];
+  } finally {
+    await client.close();
   }
 }
 
@@ -257,20 +407,60 @@ app.post('/api/search', async (req, res) => {
       // Continue without train data - don't fail the entire request
     }
 
-    // Step 4: Build connections (flight + train combinations)
+    // Step 4: Fetch hub flights for connections
+    // This populates the database with flights to/from major hubs
+    let hubFlights = [];
+    try {
+      hubFlights = await fetchHubFlights(from, to, departDate, returnDate, tripType);
+    } catch (hubError) {
+      console.error('⚠️ [HUBS] Error fetching hub flights:', hubError.message);
+    }
+
+    // Step 5: Build connections (flight + train combinations, flight + flight via hubs)
+    // Combine direct flights with hub flights for connection building
+    const allFlightsForConnections = [...(flightResults || []), ...hubFlights];
+    
+    // Deduplicate flights
+    const seenFlightIds = new Set();
+    const uniqueFlightsForConnections = allFlightsForConnections.filter(flight => {
+      const id = flight._id?.toString() || JSON.stringify(flight);
+      if (seenFlightIds.has(id)) return false;
+      seenFlightIds.add(id);
+      return true;
+    });
+    
     let connectionResults = [];
-    if (flightResults && flightResults.length > 0 && trainResults && trainResults.length > 0) {
+    if (uniqueFlightsForConnections.length > 0) {
       try {
-        console.log('🔗 [CONNECTIONS] Building train + flight connections...');
-        connectionResults = await buildConnections(flightResults, trainResults, from, to, departDate, returnDate);
+        console.log('\n🔗 [CONNECTIONS] Building multi-modal connections...');
+        console.log(`   Total flights available: ${uniqueFlightsForConnections.length}`);
+        console.log('   Searching: Flight → Amtrak, Amtrak → Flight, Flight → Flight via hubs');
+        
+        connectionResults = await buildConnections(
+          uniqueFlightsForConnections, 
+          trainResults, 
+          from, 
+          to, 
+          departDate, 
+          returnDate,
+          false // verbose off for production
+        );
         console.log(`✅ [CONNECTIONS] Found ${connectionResults.length} connection options`);
+        
+        // Log breakdown by type
+        const flightAmtrak = connectionResults.filter(c => c.connectionType === 'flight-amtrak').length;
+        const amtrakFlight = connectionResults.filter(c => c.connectionType === 'amtrak-flight').length;
+        const flightFlight = connectionResults.filter(c => c.connectionType === 'flight-flight').length;
+        if (connectionResults.length > 0) {
+          console.log(`   Breakdown: ${flightAmtrak} flight→amtrak, ${amtrakFlight} amtrak→flight, ${flightFlight} flight→flight`);
+        }
       } catch (connectionError) {
         console.error('⚠️ [CONNECTIONS] Error building connections:', connectionError.message);
         // Continue without connections - don't fail the entire request
       }
     }
 
-    // Step 5: Combine flight, train, and connection results
+    // Step 6: Combine flight, train, and connection results
     const allResults = [];
     if (flightResults && flightResults.length > 0) {
       allResults.push(...flightResults);
@@ -282,7 +472,7 @@ app.post('/api/search', async (req, res) => {
       allResults.push(...connectionResults);
     }
 
-    // Step 6: Sort all results together
+    // Step 7: Sort all results together
     if (allResults.length > 0) {
       if (sortBy === 'price') {
         allResults.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
