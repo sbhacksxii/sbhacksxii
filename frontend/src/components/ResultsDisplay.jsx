@@ -436,6 +436,27 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       <p className="text-xs text-gray-500">
                         {result.priceFormatted ? 'total' : ''}
                       </p>
+                      {/* Booking links for connection legs */}
+                      <div className="mt-3 space-y-1">
+                        {result.legs && result.legs.some(leg => leg.source === 'Amtrak') && (
+                          <a 
+                            href="https://www.amtrak.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                          >
+                            🚂 Book Train on Amtrak
+                          </a>
+                        )}
+                        {result.legs && result.legs.some(leg => leg.source === 'Google Flights') && (
+                          <button 
+                            onClick={handleGoogleFlightsClick}
+                            className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
+                          >
+                            ✈️ View Flights
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
