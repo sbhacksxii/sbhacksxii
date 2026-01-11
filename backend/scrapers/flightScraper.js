@@ -295,7 +295,7 @@ export async function scrapeGoogleFlights(from, to, departDate, returnDate = nul
       },
       duration: flight.duration,
       departDate: departDate,
-      returnDate: returnDate,
+      returnDate: returnDate || null,
       durationMinutes: parseDurationToMinutes(flight.duration),
       price: flight.price ? parseFloat(flight.price.replace(/[$,]/g, '')) : null,
       priceFormatted: flight.price,
