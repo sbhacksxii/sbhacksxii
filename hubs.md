@@ -16,4 +16,4 @@ Atlanta
 NYC
 Boston
 DC
-Santa Barbar
+Santa Barbara

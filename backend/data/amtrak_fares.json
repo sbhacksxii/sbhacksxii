@@ -398,6 +398,165 @@
     "priceUSD": 89,
     "durationMin": 570,
     "transfers": 2
-  }
+  },
 
+  {
+    "origin": "SBA",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "12:21 PM",
+    "priceUSD": 122,
+    "durationMin": 1890,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "12:00 PM",
+    "priceUSD": 193,
+    "durationMin": 1911,
+    "transfers": 3
+  },
+
+  {
+    "origin": "SBA",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "12:21 PM",
+    "priceUSD": 122,
+    "durationMin": 1890,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 122,
+    "durationMin": 1937,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 179,
+    "durationMin": 2160,
+    "transfers": 1
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 179,
+    "durationMin": 1972,
+    "transfers": 2
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 179,
+    "durationMin": 1937,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 187,
+    "durationMin": 2060,
+    "transfers": 3
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 187,
+    "durationMin": 2060,
+    "transfers": 3
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "6:45 AM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "8:30 AM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "10:40 AM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "2:10 PM",
+    "priceUSD": 38,
+    "durationMin": 208,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "3:56 PM",
+    "priceUSD": 48,
+    "durationMin": 235,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SEA",
+    "date": "2026-02-15",
+    "departureTime": "5:55 PM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SBA",
+    "date": "2026-02-15",
+    "departureTime": "7:25 PM",
+    "priceUSD": 27,
+    "durationMin": 205,
+    "transfers": 0
+  }
 ]
