@@ -1348,5 +1348,67 @@
     "priceUSD": 116,
     "durationMin": 1030,
     "transfers": 2
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "8:50 AM",
+    "priceUSD": 47,
+    "durationMin": 460,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "4:55 PM",
+    "priceUSD": 68,
+    "durationMin": 462,
+    "transfers": 0
+  },
+
+  {
+    "origin": "SEA",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "9:55 AM",
+    "priceUSD": 91,
+    "durationMin": 862,
+    "transfers": 1
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "4:45 PM",
+    "priceUSD": 43,
+    "durationMin": 452,
+    "transfers": 0
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "6:45 AM",
+    "priceUSD": 95,
+    "durationMin": 1072,
+    "transfers": 1
+  },
+
+  {
+    "origin": "PDX",
+    "dest": "SPK",
+    "date": "2026-02-15",
+    "departureTime": "10:40 AM",
+    "priceUSD": 95,
+    "durationMin": 837,
+    "transfers": 1
   }
+
+  
 ]
