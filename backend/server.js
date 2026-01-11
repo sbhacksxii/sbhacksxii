@@ -394,17 +394,22 @@ function formatTrainResults(trainResults, from, to, departDate, returnDate) {
  * Build mixed roundtrip itineraries combining one-way options
  * Creates combinations like: Amtrak outbound + Flight return, Flight outbound + Amtrak return
  * 
+ * Only includes mixed options that are BETTER than alternatives:
+ * - Better outbound duration (less time to destination), OR
+ * - Better total price (cheaper overall)
+ * 
  * @param {Array} outboundFlights - One-way flights from origin to destination
  * @param {Array} returnFlights - One-way flights from destination to origin
  * @param {Array} outboundTrains - One-way Amtrak from origin to destination
  * @param {Array} returnTrains - One-way Amtrak from destination to origin
+ * @param {Array} roundtripFlights - Roundtrip flight options for price comparison
  * @param {string} from - Origin location
  * @param {string} to - Destination location
  * @param {string} departDate - Departure date
  * @param {string} returnDate - Return date
- * @returns {Array} Array of mixed roundtrip itineraries
+ * @returns {Array} Array of filtered mixed roundtrip itineraries
  */
-function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrains, returnTrains, from, to, departDate, returnDate) {
+function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrains, returnTrains, roundtripFlights, from, to, departDate, returnDate) {
   const mixedOptions = [];
   
   console.log('\n🔀 [MIXED ROUNDTRIP] Building mixed roundtrip options...');
@@ -412,6 +417,19 @@ function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrai
   console.log(`   Return flights: ${returnFlights?.length || 0}`);
   console.log(`   Outbound trains: ${outboundTrains?.length || 0}`);
   console.log(`   Return trains: ${returnTrains?.length || 0}`);
+  console.log(`   Roundtrip flights (for comparison): ${roundtripFlights?.length || 0}`);
+  
+  // Get benchmark values from roundtrip flights for comparison
+  const cheapestRoundtripPrice = roundtripFlights && roundtripFlights.length > 0
+    ? Math.min(...roundtripFlights.map(f => f.price || Infinity))
+    : Infinity;
+  
+  // Get fastest outbound flight duration for comparison
+  const fastestOutboundFlightDuration = outboundFlights && outboundFlights.length > 0
+    ? Math.min(...outboundFlights.map(f => f.durationMinutes || Infinity))
+    : Infinity;
+  
+  console.log(`   Benchmark: Cheapest roundtrip = $${cheapestRoundtripPrice}, Fastest outbound flight = ${fastestOutboundFlightDuration} min`);
   
   // Option 1: Amtrak outbound + Flight return
   if (outboundTrains && outboundTrains.length > 0 && returnFlights && returnFlights.length > 0) {
@@ -425,56 +443,68 @@ function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrai
       for (const flight of topReturnFlights) {
         const totalPrice = (train.price || 0) + (flight.price || 0);
         const totalDuration = (train.durationMinutes || 0) + (flight.durationMinutes || 0);
+        const outboundDuration = train.durationMinutes || Infinity;
         
-        mixedOptions.push({
-          type: 'mixed-roundtrip',
-          mixedType: 'amtrak-outbound-flight-return',
-          outbound: {
-            legType: 'train',
-            departure: train.departure,
-            arrival: train.arrival,
-            duration: train.duration,
-            durationMinutes: train.durationMinutes,
-            price: train.price,
-            priceFormatted: train.priceFormatted,
-            provider: train.provider || 'Amtrak',
-            stops: train.stops,
-            date: departDate,
-            source: 'Amtrak'
-          },
-          return: {
-            legType: 'flight',
-            departure: flight.departure,
-            arrival: flight.arrival,
-            duration: flight.duration,
-            durationMinutes: flight.durationMinutes,
-            price: flight.price,
-            priceFormatted: flight.priceFormatted,
-            provider: flight.provider,
-            stops: flight.stops,
-            date: returnDate,
-            source: 'Google Flights'
-          },
-          departure: {
-            location: from,
-            time: train.departure?.time
-          },
-          arrival: {
-            location: to,
-            time: train.arrival?.time
-          },
-          departDate: departDate,
-          returnDate: returnDate,
-          duration: `${formatDuration(totalDuration)} total`,
-          durationMinutes: totalDuration,
-          price: totalPrice,
-          priceFormatted: `$${totalPrice.toFixed(2)}`,
-          currency: 'USD',
-          source: 'Mixed Roundtrip',
-          provider: `${train.provider || 'Amtrak'} + ${flight.provider || 'Flight'}`,
-          stops: `Amtrak outbound, Flight return`,
-          bags: flight.bags
-        });
+        // Only include if cheaper than roundtrip flights OR faster outbound than flights
+        const isCheaper = totalPrice < cheapestRoundtripPrice;
+        const isFasterOutbound = outboundDuration < fastestOutboundFlightDuration;
+        
+        if (isCheaper || isFasterOutbound) {
+          mixedOptions.push({
+            type: 'mixed-roundtrip',
+            mixedType: 'amtrak-outbound-flight-return',
+            outbound: {
+              legType: 'train',
+              departure: train.departure,
+              arrival: train.arrival,
+              duration: train.duration,
+              durationMinutes: train.durationMinutes,
+              price: train.price,
+              priceFormatted: train.priceFormatted,
+              provider: train.provider || 'Amtrak',
+              stops: train.stops,
+              date: departDate,
+              source: 'Amtrak',
+              fullUrl: null // Amtrak doesn't have direct booking URLs
+            },
+            return: {
+              legType: 'flight',
+              departure: flight.departure,
+              arrival: flight.arrival,
+              duration: flight.duration,
+              durationMinutes: flight.durationMinutes,
+              price: flight.price,
+              priceFormatted: flight.priceFormatted,
+              provider: flight.provider,
+              stops: flight.stops,
+              date: returnDate,
+              source: 'Google Flights',
+              fullUrl: flight.fullUrl || null
+            },
+            departure: {
+              location: from,
+              time: train.departure?.time
+            },
+            arrival: {
+              location: to,
+              time: train.arrival?.time
+            },
+            departDate: departDate,
+            returnDate: returnDate,
+            duration: `${formatDuration(totalDuration)} total`,
+            durationMinutes: totalDuration,
+            outboundDurationMinutes: outboundDuration,
+            price: totalPrice,
+            priceFormatted: `$${totalPrice.toFixed(2)}`,
+            currency: 'USD',
+            source: 'Mixed Roundtrip',
+            provider: `${train.provider || 'Amtrak'} + ${flight.provider || 'Flight'}`,
+            stops: `Amtrak outbound, Flight return`,
+            bags: flight.bags,
+            isCheaper: isCheaper,
+            isFasterOutbound: isFasterOutbound
+          });
+        }
       }
     }
   }
@@ -491,61 +521,78 @@ function buildMixedRoundtripOptions(outboundFlights, returnFlights, outboundTrai
       for (const train of topReturnTrains) {
         const totalPrice = (flight.price || 0) + (train.price || 0);
         const totalDuration = (flight.durationMinutes || 0) + (train.durationMinutes || 0);
+        const outboundDuration = flight.durationMinutes || Infinity;
         
-        mixedOptions.push({
-          type: 'mixed-roundtrip',
-          mixedType: 'flight-outbound-amtrak-return',
-          outbound: {
-            legType: 'flight',
-            departure: flight.departure,
-            arrival: flight.arrival,
-            duration: flight.duration,
-            durationMinutes: flight.durationMinutes,
-            price: flight.price,
-            priceFormatted: flight.priceFormatted,
-            provider: flight.provider,
-            stops: flight.stops,
-            date: departDate,
-            source: 'Google Flights'
-          },
-          return: {
-            legType: 'train',
-            departure: train.departure,
-            arrival: train.arrival,
-            duration: train.duration,
-            durationMinutes: train.durationMinutes,
-            price: train.price,
-            priceFormatted: train.priceFormatted,
-            provider: train.provider || 'Amtrak',
-            stops: train.stops,
-            date: returnDate,
-            source: 'Amtrak'
-          },
-          departure: {
-            location: from,
-            time: flight.departure?.time
-          },
-          arrival: {
-            location: to,
-            time: flight.arrival?.time
-          },
-          departDate: departDate,
-          returnDate: returnDate,
-          duration: `${formatDuration(totalDuration)} total`,
-          durationMinutes: totalDuration,
-          price: totalPrice,
-          priceFormatted: `$${totalPrice.toFixed(2)}`,
-          currency: 'USD',
-          source: 'Mixed Roundtrip',
-          provider: `${flight.provider || 'Flight'} + ${train.provider || 'Amtrak'}`,
-          stops: `Flight outbound, Amtrak return`,
-          bags: flight.bags
-        });
+        // Only include if cheaper than roundtrip flights OR faster outbound than other options
+        // For flight outbound, compare against other outbound options (trains)
+        const fastestOutboundTrainDuration = outboundTrains && outboundTrains.length > 0
+          ? Math.min(...outboundTrains.map(t => t.durationMinutes || Infinity))
+          : Infinity;
+        
+        const isCheaper = totalPrice < cheapestRoundtripPrice;
+        const isFasterOutbound = outboundDuration < fastestOutboundTrainDuration;
+        
+        if (isCheaper || isFasterOutbound) {
+          mixedOptions.push({
+            type: 'mixed-roundtrip',
+            mixedType: 'flight-outbound-amtrak-return',
+            outbound: {
+              legType: 'flight',
+              departure: flight.departure,
+              arrival: flight.arrival,
+              duration: flight.duration,
+              durationMinutes: flight.durationMinutes,
+              price: flight.price,
+              priceFormatted: flight.priceFormatted,
+              provider: flight.provider,
+              stops: flight.stops,
+              date: departDate,
+              source: 'Google Flights',
+              fullUrl: flight.fullUrl || null
+            },
+            return: {
+              legType: 'train',
+              departure: train.departure,
+              arrival: train.arrival,
+              duration: train.duration,
+              durationMinutes: train.durationMinutes,
+              price: train.price,
+              priceFormatted: train.priceFormatted,
+              provider: train.provider || 'Amtrak',
+              stops: train.stops,
+              date: returnDate,
+              source: 'Amtrak',
+              fullUrl: null // Amtrak doesn't have direct booking URLs
+            },
+            departure: {
+              location: from,
+              time: flight.departure?.time
+            },
+            arrival: {
+              location: to,
+              time: flight.arrival?.time
+            },
+            departDate: departDate,
+            returnDate: returnDate,
+            duration: `${formatDuration(totalDuration)} total`,
+            durationMinutes: totalDuration,
+            outboundDurationMinutes: outboundDuration,
+            price: totalPrice,
+            priceFormatted: `$${totalPrice.toFixed(2)}`,
+            currency: 'USD',
+            source: 'Mixed Roundtrip',
+            provider: `${flight.provider || 'Flight'} + ${train.provider || 'Amtrak'}`,
+            stops: `Flight outbound, Amtrak return`,
+            bags: flight.bags,
+            isCheaper: isCheaper,
+            isFasterOutbound: isFasterOutbound
+          });
+        }
       }
     }
   }
   
-  console.log(`   ✅ Built ${mixedOptions.length} mixed roundtrip options`);
+  console.log(`   ✅ Built ${mixedOptions.length} mixed roundtrip options (filtered for better price/duration)`);
   
   // Sort by price
   mixedOptions.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
@@ -670,12 +717,13 @@ app.post('/api/search', async (req, res) => {
       }
       console.log(`✅ Found ${returnFlights?.length || 0} one-way return flights`);
       
-      // Step 6: Build mixed roundtrip options
+      // Step 6: Build mixed roundtrip options (filtered by price/duration comparison)
       const mixedOptions = buildMixedRoundtripOptions(
         outboundFlights,
         returnFlights,
         outboundTrains,
         returnTrains,
+        roundtripFlights, // Pass roundtrip flights for price comparison
         from,
         to,
         departDate,

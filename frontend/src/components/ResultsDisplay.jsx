@@ -4,30 +4,46 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
   const [showAll, setShowAll] = useState(false)
 
   // Build Google Flights URL from search parameters
-  const buildGoogleFlightsUrl = () => {
-    if (!searchParams) return 'https://www.google.com/travel/flights'
+  const buildGoogleFlightsUrl = (from, to, departDate, returnDate = null) => {
+    const fromLoc = from || searchParams?.from
+    const toLoc = to || searchParams?.to
+    const depDate = departDate || searchParams?.departDate
+    const retDate = returnDate || (searchParams?.tripType === 'roundtrip' ? searchParams?.returnDate : null)
     
-    const { from, to, departDate, returnDate, tripType } = searchParams
+    if (!fromLoc || !toLoc) return 'https://www.google.com/travel/flights'
     
-    // Format dates from YYYY-MM-DD to a format Google Flights understands
-    // Google Flights uses YYYY-MM-DD format in the URL
-    let query = `Flights from ${encodeURIComponent(from)} to ${encodeURIComponent(to)}`
+    let query = `Flights from ${encodeURIComponent(fromLoc)} to ${encodeURIComponent(toLoc)}`
     
-    if (departDate) {
-      query += ` on ${departDate}`
+    if (depDate) {
+      query += ` on ${depDate}`
     }
     
-    if (tripType === 'roundtrip' && returnDate) {
-      query += ` returning on ${returnDate}`
+    if (retDate) {
+      query += ` returning on ${retDate}`
     }
     
     return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`
   }
 
-  const handleGoogleFlightsClick = () => {
-    const url = buildGoogleFlightsUrl()
-    window.open(url, '_blank', 'noopener,noreferrer')
+  // Get the appropriate URL for a flight result or leg
+  const getFlightUrl = (item, fromLoc = null, toLoc = null, date = null) => {
+    // Use stored fullUrl if available
+    if (item?.fullUrl) return item.fullUrl
+    // Otherwise build a URL from the search params or provided locations
+    return buildGoogleFlightsUrl(
+      fromLoc || item?.departure?.location,
+      toLoc || item?.arrival?.location,
+      date || item?.date || item?.departDate
+    )
   }
+
+  const handleGoogleFlightsClick = (url = null) => {
+    const targetUrl = url || buildGoogleFlightsUrl()
+    window.open(targetUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  // Amtrak home URL
+  const AMTRAK_URL = 'https://www.amtrak.com'
 
   if (loading) {
     return (
@@ -284,32 +300,41 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                         total roundtrip
                       </p>
                       <div className="mt-3 space-y-1">
-                        {result.outbound?.source === 'Amtrak' && (
+                        {/* Outbound booking link */}
+                        {result.outbound?.source === 'Amtrak' ? (
                           <a 
-                            href="https://www.amtrak.com"
+                            href={AMTRAK_URL}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
                           >
-                            Book Outbound on Amtrak
+                            🚂 Book Outbound Amtrak
                           </a>
-                        )}
-                        {result.return?.source === 'Amtrak' && (
-                          <a 
-                            href="https://www.amtrak.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
-                          >
-                            Book Return on Amtrak
-                          </a>
-                        )}
-                        {(result.outbound?.source === 'Google Flights' || result.return?.source === 'Google Flights') && (
+                        ) : result.outbound?.source === 'Google Flights' && (
                           <button 
-                            onClick={handleGoogleFlightsClick}
+                            onClick={() => handleGoogleFlightsClick(getFlightUrl(result.outbound))}
                             className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
                           >
-                            View Flights
+                            ✈️ Book Outbound Flight
+                          </button>
+                        )}
+                        
+                        {/* Return booking link */}
+                        {result.return?.source === 'Amtrak' ? (
+                          <a 
+                            href={AMTRAK_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                          >
+                            🚂 Book Return Amtrak
+                          </a>
+                        ) : result.return?.source === 'Google Flights' && (
+                          <button 
+                            onClick={() => handleGoogleFlightsClick(getFlightUrl(result.return))}
+                            className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
+                          >
+                            ✈️ Book Return Flight
                           </button>
                         )}
                       </div>
@@ -428,14 +453,48 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       </div>
                     </div>
                     
-                    {/* Right: Price */}
+                    {/* Right: Price & Booking Links */}
                     <div className="ml-6 text-right border-l pl-6 border-gray-200">
                       <p className="text-2xl font-bold text-purple-600">
                         {formatPrice(result.price, result.currency)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mb-2">
                         {result.priceFormatted ? 'total' : ''}
                       </p>
+                      
+                      {/* Booking links for each leg */}
+                      <div className="space-y-1">
+                        {result.legs && result.legs.map((leg, legIdx) => {
+                          const isLegFlight = leg.source === 'Google Flights' || leg.legType === 'flight'
+                          const isLegTrain = leg.source === 'Amtrak' || leg.legType === 'train'
+                          
+                          if (isLegFlight) {
+                            const flightUrl = getFlightUrl(leg)
+                            return (
+                              <button
+                                key={legIdx}
+                                onClick={() => handleGoogleFlightsClick(flightUrl)}
+                                className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
+                              >
+                                ✈️ Book Leg {legIdx + 1} Flight
+                              </button>
+                            )
+                          } else if (isLegTrain) {
+                            return (
+                              <a
+                                key={legIdx}
+                                href={AMTRAK_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                              >
+                                🚂 Book Leg {legIdx + 1} Amtrak
+                              </a>
+                            )
+                          }
+                          return null
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -548,7 +607,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                     </p>
                     {isFlight && (
                       <button 
-                        onClick={handleGoogleFlightsClick}
+                        onClick={() => handleGoogleFlightsClick(getFlightUrl(result))}
                         className="mt-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -559,7 +618,7 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                     )}
                     {isTrain && (
                       <a 
-                        href="https://www.amtrak.com"
+                        href={AMTRAK_URL}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-2 inline-block bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
