@@ -5,11 +5,20 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "flights": "node flights/google-flights.js",
-    "dev": "node --watch flights/google-flights.js"
+    "flights": "node flights/test-scraper.js",
+    "trains": "node trains/test-scraper.js",
+    "trains:playwright": "node trains/amtrak-playwright.js",
+    "amtrak": "node trains/test-scraper.js",
+    "amtrak:pw": "node trains/amtrak-playwright.js",
+    "dev:flights": "node --watch flights/google-flights.js",
+    "dev:trains": "node --watch trains/amtrak.js"
   },
   "dependencies": {
     "puppeteer": "^24.34.0",
-    "readline": "^1.3.0"
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "playwright": "^1.40.0",
+    "readline": "^1.3.0",
+    "mongodb": "^6.1.0"
   }
 }
