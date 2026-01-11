@@ -9,6 +9,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sortBy, setSortBy] = useState('price')
+  const [searchParams, setSearchParams] = useState(null)
 
   // API URL - uses environment variable in production
   // TODO: Replace with your actual Railway URL if env var isn't working
@@ -22,6 +23,7 @@ function App() {
     setLoading(true)
     setError(null)
     setSortBy(searchParams.sortBy)
+    setSearchParams(searchParams)
     
     const apiEndpoint = `${API_URL}/api/search`
     console.log('🔍 Searching with API URL:', apiEndpoint)
@@ -110,6 +112,7 @@ function App() {
                 loading={loading} 
                 sortBy={sortBy}
                 onSortChange={handleSortChange}
+                searchParams={searchParams}
               />
             </div>
           </div>
