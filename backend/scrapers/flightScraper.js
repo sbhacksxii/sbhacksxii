@@ -11,12 +11,17 @@ import { MongoClient } from 'mongodb';
  */
 function buildGoogleFlightsUrl(from, to, departDate, returnDate = null) {
   const baseUrl = 'https://www.google.com/travel/flights';
-  
-  let searchQuery = `Flights from ${from} to ${to} on ${departDate}`;
+
+  let searchQuery;
+
   if (returnDate) {
-    searchQuery += ` return ${returnDate}`;
+    // Round-trip
+    searchQuery = `round trip flights from ${from} to ${to} departing ${departDate} returning ${returnDate}`;
+  } else {
+    // One-way
+    searchQuery = `one way flights from ${from} to ${to} departing ${departDate}`;
   }
-  
+
   return `${baseUrl}?q=${encodeURIComponent(searchQuery)}&curr=USD`;
 }
 

@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { scrapeGoogleFlights } from './scrapers/flightScraper.js';
 import { MongoClient } from 'mongodb';
 import Groq from 'groq-sdk';
@@ -21,6 +24,36 @@ import {
 } from './services/connectionService.js';
 
 dotenv.config();
+
+// Get the directory of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load commercial airports from file
+let COMMERCIAL_AIRPORTS = [];
+try {
+  const airportsFilePath = join(__dirname, 'commericalAirports.txt');
+  const airportsContent = readFileSync(airportsFilePath, 'utf-8');
+  COMMERCIAL_AIRPORTS = airportsContent
+    .split('\n')
+    .map(code => code.trim())
+    .filter(code => code.length > 0 && code.length <= 4);
+  console.log(`✅ Loaded ${COMMERCIAL_AIRPORTS.length} commercial airports`);
+} catch (error) {
+  console.error('⚠️ Could not load commercial airports file:', error.message);
+  // Fallback to major hub airports
+  COMMERCIAL_AIRPORTS = MAJOR_HUB_AIRPORTS.map(a => a.code);
+}
+
+/**
+ * Check if an airport code is a valid commercial airport
+ * @param {string} code - Airport code to check
+ * @returns {boolean} True if valid commercial airport
+ */
+function isValidAirport(code) {
+  if (!code) return false;
+  return COMMERCIAL_AIRPORTS.includes(code.toUpperCase().trim());
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -904,13 +937,15 @@ app.post('/api/chat', async (req, res) => {
 4. Be conversational, friendly, and use emojis appropriately (but not excessively)
 5. When users ask about specific routes, ALWAYS ask for missing information before filling the form
 
-AVAILABLE AIRPORTS (use these 3-letter codes):
-LAX (Los Angeles), SFO (San Francisco), OAK (Oakland), SJC (San Jose), SAN (San Diego), 
-DEN (Denver), SLC (Salt Lake City), SEA (Seattle), PDX (Portland), ORD (Chicago), 
-DFW (Dallas), AUS (Austin), IAH (Houston), MSY (New Orleans), ATL (Atlanta), 
-JFK (New York), LGA (New York), EWR (Newark), BOS (Boston), DCA (Washington DC), 
-IAD (Washington DC), PHX (Phoenix), LAS (Las Vegas), MIA (Miami), MCO (Orlando), 
-MSP (Minneapolis), DTW (Detroit), CLT (Charlotte), PHL (Philadelphia)
+AVAILABLE AIRPORTS:
+We support ALL US commercial airports! Use standard 3-letter IATA airport codes.
+Common examples: LAX (Los Angeles), SFO (San Francisco), JFK/LGA/EWR (New York area), 
+ORD/MDW (Chicago), DFW/DAL (Dallas), ATL (Atlanta), MIA/FLL (Miami area), SEA (Seattle), 
+DEN (Denver), BOS (Boston), DCA/IAD/BWI (Washington DC area), PHX (Phoenix), LAS (Las Vegas),
+MCO (Orlando), MSP (Minneapolis), DTW (Detroit), CLT (Charlotte), PHL (Philadelphia),
+SAN (San Diego), PDX (Portland), AUS (Austin), IAH/HOU (Houston), MSY (New Orleans),
+SLC (Salt Lake City), BNA (Nashville), RDU (Raleigh), SJC (San Jose), OAK (Oakland), etc.
+Users can use any valid US airport code - we support over 500 commercial airports
 
 AVAILABLE AMTRAK STATIONS (use these codes):
 LAX (Los Angeles Union Station), SBA (Santa Barbara), SAN (San Diego Santa Fe Depot), 
@@ -921,12 +956,14 @@ ABQ (Albuquerque), NOL (New Orleans), SFC (San Francisco/Emeryville), OMA (Omaha
 SLC (Salt Lake City), KYC (Kansas City), SPK (Spokane)
 
 IMPORTANT LOCATION RULES:
-- When a user mentions a city, help them select the correct airport or station code from the lists above
+- When a user mentions a city, help them identify the correct airport code (use standard IATA codes)
 - If a user says "New York", ask if they want JFK, LGA, EWR (airports) or NYP (Penn Station for trains)
 - If a user says "Los Angeles", use LAX for both airport and Amtrak station
 - If a user says "San Francisco", ask if they want SFO airport or SFC (Emeryville Amtrak station)
+- If a user says "Chicago", ask if they want ORD (O'Hare), MDW (Midway) or CHI (Union Station for trains)
 - Always use the 3-letter codes (e.g., LAX, SFO, NYP) in searchParams, NOT city names
-- If a city is not in the available lists, inform the user which locations we support
+- We support ALL US commercial airports - if you know the airport code, use it!
+- For Amtrak stations, use the station codes listed above
 
 IMPORTANT INFORMATION COLLECTION RULES:
 - When a user asks to search for flights/travel, you MUST collect ALL required information before filling the form
@@ -1272,14 +1309,18 @@ app.get('/api/locations', async (req, res) => {
   try {
     const stations = await getStations();
     
-    // Format airports from MAJOR_HUB_AIRPORTS
-    const airports = MAJOR_HUB_AIRPORTS.map(airport => ({
-      code: airport.code,
-      name: `${airport.city} Airport`,
-      city: airport.city,
-      state: airport.state,
-      type: 'airport'
-    }));
+    // Format all commercial airports
+    const airports = COMMERCIAL_AIRPORTS.map(code => {
+      // Check if this airport is in MAJOR_HUB_AIRPORTS for additional info
+      const hubInfo = MAJOR_HUB_AIRPORTS.find(h => h.code === code);
+      return {
+        code: code,
+        name: hubInfo ? `${hubInfo.city} Airport` : `${code} Airport`,
+        city: hubInfo?.city || code,
+        state: hubInfo?.state || '',
+        type: 'airport'
+      };
+    });
     
     // Format Amtrak stations
     const amtrakStations = stations.map(station => ({
@@ -1290,9 +1331,9 @@ app.get('/api/locations', async (req, res) => {
       type: 'station'
     }));
     
-    // Combine and sort by city name
+    // Combine and sort by code
     const allLocations = [...airports, ...amtrakStations].sort((a, b) => 
-      a.city.localeCompare(b.city)
+      a.code.localeCompare(b.code)
     );
     
     res.json(allLocations);
@@ -1300,6 +1341,30 @@ app.get('/api/locations', async (req, res) => {
     console.error('❌ Locations error:', error);
     res.status(500).json({ error: 'Failed to load locations' });
   }
+});
+
+/**
+ * Get all available commercial airports
+ * GET /api/airports
+ */
+app.get('/api/airports', (req, res) => {
+  res.json({
+    count: COMMERCIAL_AIRPORTS.length,
+    airports: COMMERCIAL_AIRPORTS
+  });
+});
+
+/**
+ * Validate if an airport code is valid
+ * GET /api/airports/validate/:code
+ */
+app.get('/api/airports/validate/:code', (req, res) => {
+  const code = req.params.code?.toUpperCase().trim();
+  const isValid = isValidAirport(code);
+  res.json({
+    code: code,
+    valid: isValid
+  });
 });
 
 // Health check endpoint
@@ -1317,6 +1382,11 @@ app.get('/', (req, res) => {
       health: 'GET /api/health',
       chat: 'POST /api/chat',
       recommendations: 'GET /api/recommendations',
+      locations: 'GET /api/locations',
+      airports: {
+        list: 'GET /api/airports',
+        validate: 'GET /api/airports/validate/:code'
+      },
       amtrak: {
         fare: 'GET /api/amtrak/fare?origin=SBA&dest=LAX&date=2026-02-15',
         stations: 'GET /api/amtrak/stations',

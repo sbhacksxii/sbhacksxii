@@ -461,39 +461,26 @@ function ResultsDisplay({ results, loading, sortBy, onSortChange, searchParams }
                       <p className="text-xs text-gray-500 mb-2">
                         {result.priceFormatted ? 'total' : ''}
                       </p>
-                      
-                      {/* Booking links for each leg */}
-                      <div className="space-y-1">
-                        {result.legs && result.legs.map((leg, legIdx) => {
-                          const isLegFlight = leg.source === 'Google Flights' || leg.legType === 'flight'
-                          const isLegTrain = leg.source === 'Amtrak' || leg.legType === 'train'
-                          
-                          if (isLegFlight) {
-                            const flightUrl = getFlightUrl(leg)
-                            return (
-                              <button
-                                key={legIdx}
-                                onClick={() => handleGoogleFlightsClick(flightUrl)}
-                                className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
-                              >
-                                ✈️ Book Leg {legIdx + 1} Flight
-                              </button>
-                            )
-                          } else if (isLegTrain) {
-                            return (
-                              <a
-                                key={legIdx}
-                                href={AMTRAK_URL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
-                              >
-                                🚂 Book Leg {legIdx + 1} Amtrak
-                              </a>
-                            )
-                          }
-                          return null
-                        })}
+                      {/* Booking links for connection legs */}
+                      <div className="mt-3 space-y-1">
+                        {result.legs && result.legs.some(leg => leg.source === 'Amtrak') && (
+                          <a 
+                            href="https://www.amtrak.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors text-center"
+                          >
+                            🚂 Book Train on Amtrak
+                          </a>
+                        )}
+                        {result.legs && result.legs.some(leg => leg.source === 'Google Flights') && (
+                          <button 
+                            onClick={handleGoogleFlightsClick}
+                            className="block w-full bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors text-center"
+                          >
+                            ✈️ View Flights
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
