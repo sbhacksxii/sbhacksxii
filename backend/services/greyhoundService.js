@@ -352,29 +352,73 @@ async function findStationCodeByCity(cityName) {
   const stations = await loadStationsData();
   const searchName = cityName.toLowerCase().trim();
   
-  // Try exact match first
+  // Common city name variations mapping
+  const cityVariations = {
+    'la': 'los angeles',
+    'los angeles': 'los angeles',
+    'san fran': 'san francisco',
+    'san francisco': 'san francisco',
+    'sf': 'san francisco',
+    'ny': 'new york',
+    'new york': 'new york',
+    'nyc': 'new york',
+    'chi': 'chicago',
+    'chicago': 'chicago',
+    'bos': 'boston',
+    'boston': 'boston',
+    'philly': 'philadelphia',
+    'philadelphia': 'philadelphia',
+    'sea': 'seattle',
+    'seattle': 'seattle',
+    'den': 'denver',
+    'denver': 'denver',
+    'atl': 'atlanta',
+    'atlanta': 'atlanta',
+    'dal': 'dallas',
+    'dallas': 'dallas',
+    'phx': 'phoenix',
+    'phoenix': 'phoenix',
+    'las vegas': 'las vegas',
+    'vegas': 'las vegas',
+    'miami': 'miami',
+    'hou': 'houston',
+    'houston': 'houston',
+    'san diego': 'san diego',
+    'sd': 'san diego'
+  };
+  
+  // Try to normalize using variations
+  const normalizedSearch = cityVariations[searchName] || searchName;
+  
+  // Try exact match first (both original and normalized)
   let station = stations.find(s => 
     s.city.toLowerCase() === searchName ||
-    s.name.toLowerCase().includes(searchName)
+    s.city.toLowerCase() === normalizedSearch ||
+    s.name.toLowerCase().includes(searchName) ||
+    s.name.toLowerCase().includes(normalizedSearch) ||
+    normalizeCode(s.code) === normalizeCode(cityName) // Also match by station code
   );
   
   if (station) return station.code;
   
   // Try partial match
   station = stations.find(s => 
-    s.city.toLowerCase().includes(searchName) ||
-    searchName.includes(s.city.toLowerCase())
+    s.city.toLowerCase().includes(normalizedSearch) ||
+    normalizedSearch.includes(s.city.toLowerCase()) ||
+    s.name.toLowerCase().includes(normalizedSearch) ||
+    normalizedSearch.includes(s.name.toLowerCase())
   );
   
   if (station) return station.code;
   
   // Try matching common city name patterns
-  const cityWords = searchName.split(/\s+/);
+  const cityWords = normalizedSearch.split(/\s+/);
   for (const word of cityWords) {
-    if (word.length < 3) continue;
+    if (word.length < 2) continue; // Changed from 3 to 2 to catch "LA", "SF", etc.
     station = stations.find(s => 
       s.city.toLowerCase().includes(word) ||
-      s.name.toLowerCase().includes(word)
+      s.name.toLowerCase().includes(word) ||
+      s.code.toLowerCase() === word
     );
     if (station) return station.code;
   }
@@ -487,50 +531,56 @@ async function getGroupedBusResults(origin, dest, maxResults = 5) {
   let originCode = normalizedOrigin;
   let destCode = normalizedDest;
   
-  // If it doesn't look like a station code (more than 4 chars), try city lookup
-  if (originCode.length > 4) {
-    const foundCode = await findStationCodeByCity(origin);
-    if (foundCode) {
-      originCode = foundCode;
+  // Always try city lookup first, even for short codes (might be airport codes that match)
+  const originFoundCode = await findStationCodeByCity(origin);
+  if (originFoundCode) {
+    originCode = originFoundCode;
+  } else {
+    // If city lookup fails, try to match station code directly
+    const stations = await loadStationsData();
+    const originStation = stations.find(s => 
+      normalizeCode(s.code) === normalizedOrigin ||
+      normalizeCode(s.city) === normalizedOrigin
+    );
+    if (originStation) {
+      originCode = originStation.code;
     } else {
-      // Try using city name directly
-      const stations = await loadStationsData();
-      const originStation = stations.find(s => 
-        normalizeCode(s.city) === normalizedOrigin
-      );
-      if (originStation) {
-        originCode = originStation.code;
-      } else {
-        // If city lookup fails, return empty array
-        return [];
-      }
+      // Log for debugging
+      console.log(`❌ [GREYHOUND] Could not find origin station for: ${origin} (normalized: ${normalizedOrigin})`);
+      return [];
     }
   }
   
-  if (destCode.length > 4) {
-    const foundCode = await findStationCodeByCity(dest);
-    if (foundCode) {
-      destCode = foundCode;
+  const destFoundCode = await findStationCodeByCity(dest);
+  if (destFoundCode) {
+    destCode = destFoundCode;
+  } else {
+    // If city lookup fails, try to match station code directly
+    const stations = await loadStationsData();
+    const destStation = stations.find(s => 
+      normalizeCode(s.code) === normalizedDest ||
+      normalizeCode(s.city) === normalizedDest
+    );
+    if (destStation) {
+      destCode = destStation.code;
     } else {
-      const stations = await loadStationsData();
-      const destStation = stations.find(s => 
-        normalizeCode(s.city) === normalizedDest
-      );
-      if (destStation) {
-        destCode = destStation.code;
-      } else {
-        // If city lookup fails, return empty array
-        return [];
-      }
+      // Log for debugging
+      console.log(`❌ [GREYHOUND] Could not find destination station for: ${dest} (normalized: ${normalizedDest})`);
+      return [];
     }
   }
+  
+  console.log(`🔍 [GREYHOUND] Looking up route: ${originCode} → ${destCode} (from "${origin}" to "${dest}")`);
   
   // Get all fares for this route
   const fares = await getAllFaresForRoute(originCode, destCode);
   
   if (fares.length === 0) {
+    console.log(`❌ [GREYHOUND] No fares found for route: ${originCode} → ${destCode}`);
     return [];
   }
+  
+  console.log(`✅ [GREYHOUND] Found ${fares.length} fares for route: ${originCode} → ${destCode}`);
   
   // Group and average similar buses
   return groupAndAverageBuses(fares, maxResults);

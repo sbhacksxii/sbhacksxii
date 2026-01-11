@@ -88,5 +88,35 @@
     "name": "San Diego Greyhound Station",
     "city": "San Diego",
     "state": "CA"
+  },
+  {
+    "code": "PDX",
+    "name": "Portland Greyhound Station",
+    "city": "Portland",
+    "state": "OR"
+  },
+  {
+    "code": "MSP",
+    "name": "Minneapolis Greyhound Station",
+    "city": "Minneapolis",
+    "state": "MN"
+  },
+  {
+    "code": "DET",
+    "name": "Detroit Greyhound Station",
+    "city": "Detroit",
+    "state": "MI"
+  },
+  {
+    "code": "SAT",
+    "name": "San Antonio Greyhound Station",
+    "city": "San Antonio",
+    "state": "TX"
+  },
+  {
+    "code": "AUS",
+    "name": "Austin Greyhound Station",
+    "city": "Austin",
+    "state": "TX"
   }
 ]
